@@ -1,42 +1,32 @@
-# sv
+# Trauma Triage Agent
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A research project exploring LLM-assisted trauma triage decision support. The agent takes free-text EMS trauma reports and determines a trauma activation level using a hybrid approach: deterministic evaluation for vital signs and LLM-based reasoning for mechanism-of-injury and anatomical criteria.
 
-## Creating a project
+Built in collaboration between Clemson University Industrial Engineering and Anthropic.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## How It Works
 
-```sh
-# create a new project
-npx sv create my-app
-```
+1. **Extraction** — An LLM extracts structured fields (vitals, injuries, mechanisms) from the free-text report
+2. **Deterministic Evaluation** — Vital sign criteria are evaluated against age-appropriate thresholds
+3. **LLM Evaluation** — Mechanism-of-injury and anatomical injury criteria are evaluated with clinical reasoning
+4. **Triage Decision** — Results are merged and the highest activation level is reported
 
-To recreate this project with the same configuration:
+Activation levels: **Level 1** (critical), **Level 2** (high-priority), **Level 3** (moderate), or **Standard Triage** (no criteria met).
 
-```sh
-# recreate this project
-pnpm dlx sv create --template minimal --types ts --add vitest="usages:unit,component" tailwindcss="plugins:typography,forms" devtools-json mdsvex --install pnpm ./
-```
+## Documentation
 
-## Developing
+- [`SPEC.md`](./SPEC.md) — Full product specification (architecture, data flow, criteria definitions)
+- [`IMPLEMENTATION.md`](./IMPLEMENTATION.md) — Technical implementation plan (file structure, component hierarchy, build order)
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Tech Stack
 
-```sh
-npm run dev
+SvelteKit 2 + Svelte 5, Tailwind CSS 4, shadcn-svelte, Anthropic Claude (Haiku for extraction, Sonnet for evaluation), Zod for schema validation.
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
+## Development
 
 ```sh
-npm run build
+pnpm install
+pnpm dev
 ```
 
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Requires an `ANTHROPIC_API_KEY` environment variable (see `.env.example`).
