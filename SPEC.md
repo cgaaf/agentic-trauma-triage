@@ -436,7 +436,7 @@ A purple "MOCK MODE" badge in the header when mock mode is active. Prevents conf
 
 ### Phase 3: Speech, Rate Limiting & Polish
 
-- **Speech input**: Web Speech API or Whisper API for voice-to-text EMS report entry
+- **Speech input**: OpenAI `gpt-4o-transcribe` via the Transcription API (`/v1/audio/transcriptions`) with push-to-talk and `stream=true` for real-time text output. Medical terminology prompting (e.g., "EMS trauma report with terms like GCS, SBP, intubation, pneumothorax, TBSA") improves clinical accuracy. Future enhancement: Realtime API WebSocket streaming with built-in noise reduction for noisy field environments.
 - **Basic rate limiting**: 10 requests/minute per IP to prevent abuse
 - **Print/export**: Print-friendly CSS or PDF export
 - **Enhanced accessibility**: WCAG 2.1 AA compliance, screen reader support, keyboard navigation improvements
