@@ -1,6 +1,9 @@
-import type { Preview } from '@storybook/sveltekit'
+import type { Preview } from '@storybook/sveltekit';
+import '../src/routes/layout.css';
+import ModeWatcherDecorator from './ModeWatcherDecorator.svelte';
 
 const preview: Preview = {
+  decorators: [() => ModeWatcherDecorator],
   parameters: {
     controls: {
       matchers: {
