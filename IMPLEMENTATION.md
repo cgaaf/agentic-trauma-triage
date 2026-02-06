@@ -19,8 +19,8 @@ src/lib/types/index.ts             — Re-exports
 
 #### Data Layer
 ```
-src/lib/server/criteria/criteria.ts       — CSV parsing + typed criteria array (server-only)
-src/lib/server/criteria/criteria.spec.ts  — Tests for CSV parsing
+src/lib/server/criteria/criteria.ts       — Hardcoded typed criteria array + Map (server-only)
+src/lib/server/criteria/criteria.spec.ts  — Validation tests for criteria data integrity
 ```
 
 #### Deterministic Engine
@@ -106,7 +106,7 @@ export interface Criterion {
   description: string;
   activationLevel: ActivationLevel;
   category: AgeCategory;
-  ageRangeLabel: string;
+  ageRangeLabel: string;                // Human-readable: "16 - 64", "0 - 15", "> 64"
   ageMin: number;
   ageMax: number | null;                // null = open-ended (geriatric)
   evaluationMethod: EvaluationMethod;
@@ -143,6 +143,8 @@ export interface CriterionMatch {
   criterionId: number;
   description: string;
   activationLevel: ActivationLevel;
+  category: AgeCategory;         // For display grouping (subheader)
+  ageRangeLabel: string;         // For display grouping (e.g., "16 - 64")
   source: 'deterministic' | 'llm';
   confidence?: number;           // 0-1, LLM-sourced only
   triggerReason: string;         // e.g., "GCS = 8 < 12"
@@ -171,27 +173,69 @@ export type SSEEvent =
   | { type: 'error'; message: string; phase: string; canRetry: boolean };
 ```
 
-### CSV Parsing (`src/lib/server/criteria/criteria.ts`)
+### Criteria Data (`src/lib/server/criteria/criteria.ts`)
 
-Import the CSV as a raw string using Vite's `?raw` suffix:
+All 137 criteria are hardcoded as a typed TypeScript array. The `trauma-criteria.csv` remains in the repository as the medical team's reference document but is **not imported** by the application.
 
 ```typescript
-import csvRaw from '../../../trauma-criteria.csv?raw';
+import type { Criterion } from '$lib/types/criteria';
+
+export const CRITERIA: Criterion[] = [
+  // === ADULT (16-64) ===
+
+  // Level 1 — Deterministic
+  {
+    id: 1,
+    description: 'Glasgow coma score (GCS) < 12',
+    activationLevel: 'Level 1',
+    category: 'Adult',
+    ageRangeLabel: '16 - 64',
+    ageMin: 16,
+    ageMax: 64,
+    evaluationMethod: 'deterministic',
+    vitalRule: { field: 'gcs', operator: '<', threshold: 12 },
+  },
+  // Level 1 — Hybrid
+  {
+    id: 2,
+    description: 'Injury with associated tachycardia (HR > 100) AND poor perfusion',
+    activationLevel: 'Level 1',
+    category: 'Adult',
+    ageRangeLabel: '16 - 64',
+    ageMin: 16,
+    ageMax: 64,
+    evaluationMethod: 'hybrid',
+    vitalRule: { field: 'hr', operator: '>', threshold: 100, requiresLlmConfirmation: 'poor perfusion' },
+  },
+  // Level 1 — LLM-only (no vitalRule)
+  {
+    id: 6,
+    description: 'Respiratory distress',
+    activationLevel: 'Level 1',
+    category: 'Adult',
+    ageRangeLabel: '16 - 64',
+    ageMin: 16,
+    ageMax: 64,
+    evaluationMethod: 'llm',
+  },
+  // ... all 137 criteria, grouped by category then level
+];
+
+export const CRITERIA_MAP = new Map(CRITERIA.map(c => [c.id, c]));
 ```
 
-Parsing logic:
-1. Strip BOM character (`\uFEFF`) from the start
-2. Split by newlines, handle quoted fields containing commas
-3. For each row, create a `Criterion` object
-4. Read `evaluation_method` column directly → `evaluationMethod` field
-5. For deterministic/hybrid criteria only: parse `VitalRule` from description
-   (e.g., "GCS < 12" → `{ field: 'gcs', operator: '<', threshold: 12 }`)
-6. For hybrid criteria: additionally parse the qualitative condition
-   (e.g., "AND poor perfusion" → `requiresLlmConfirmation: 'poor perfusion'`)
-7. Handle empty `age_max` for geriatric criteria → store as `null`
-7. Export `const CRITERIA: Map<number, Criterion>` keyed by criterion ID (enforces uniqueness, O(1) lookup during merge/dedup)
+**Structure:**
+- Grouped by category (Adult → Pediatric → Geriatric) then by activation level
+- Comments separating sections for readability
+- Deterministic criteria (20): include `vitalRule` with field/operator/threshold
+- Hybrid criteria (2): include `vitalRule` with `requiresLlmConfirmation`
+- LLM-only criteria (115): no `vitalRule`
+- Geriatric criteria have `ageMax: null` (open-ended)
+- Pediatric SBP criteria have narrow per-year age ranges (e.g., id=50 has ageMin=3, ageMax=3)
 
-**Deterministic criteria IDs** (from CSV analysis):
+**Why hardcoded instead of CSV parsing:** The deterministic criteria descriptions have inconsistent natural-language formatting (=, ==, ≤, trailing text like "mmHg for a 2 year old") that makes reliable VitalRule extraction fragile. Since there are only 22 deterministic/hybrid rules across 137 total criteria, and these are stable medical standards, hardcoding is simpler and more reliable. A validation test ensures data integrity.
+
+**Deterministic criteria IDs** (for reference):
 - Adult L1: id=1 (GCS<12), id=3 (SBP<90), id=4 (RR<10), id=5 (RR>29)
 - Adult L1 hybrid: id=2 (HR>100 AND poor perfusion)
 - Adult L2: id=26 (GCS 12 or 13)
@@ -529,12 +573,16 @@ Register in `@theme inline` for Tailwind utility classes:
 
 #### `src/lib/server/criteria/criteria.spec.ts`
 
-- All 137 rows parse without errors
-- Age ranges correctly parsed (spot-check Adult, Pediatric, Geriatric)
+- All 137 criteria present in the array
+- No duplicate IDs
+- Every criterion has a non-empty `ageRangeLabel`
+- Every `evaluationMethod: 'deterministic'` criterion has a `vitalRule`
+- Every `evaluationMethod: 'hybrid'` criterion has a `vitalRule` with `requiresLlmConfirmation`
+- No `evaluationMethod: 'llm'` criterion has a `vitalRule`
+- Age ranges are valid (`ageMin <= ageMax` where `ageMax` is not null)
 - Geriatric criteria have `ageMax === null`
 - Pediatric SBP criteria have narrow age ranges (e.g., id=50 has ageMin=3, ageMax=3)
-- `evaluationMethod` classification is correct for known IDs
-- BOM character handled
+- Spot-check known IDs (e.g., id=1 is GCS<12, id=3 is SBP<90, id=26 is GCS range 12-13)
 
 #### `src/lib/server/engine/deterministic.spec.ts`
 
@@ -591,8 +639,8 @@ Build in this sequence to maintain testability at each step:
 ### Step 1: Types (zero dependencies)
 Create all TypeScript types in `src/lib/types/`. These are the foundation everything else depends on.
 
-### Step 2: CSV Parsing + Tests
-Implement `src/lib/server/criteria/criteria.ts`. Write and run tests. Validate all 137 criteria load correctly with proper classification.
+### Step 2: Criteria Data + Validation Tests
+Create `src/lib/server/criteria/criteria.ts` with all 137 hardcoded criteria. Write validation tests to ensure data integrity (count, uniqueness, VitalRule presence for deterministic/hybrid, age range validity).
 
 ### Step 3: Deterministic Engine + Tests
 Implement `src/lib/server/engine/deterministic.ts` and `merge.ts`. Write comprehensive unit tests. This is the most critical and most testable module.
@@ -646,7 +694,7 @@ Replace `src/routes/+page.svelte` with the full composition of all components wi
 
 ## Key Design Decisions
 
-1. **CSV embedded at build time via Vite `?raw` import**: File content is inlined into the server bundle during build, then parsed into typed `Criterion` objects on first module initialization. No runtime file system reads.
+1. **Criteria hardcoded in TypeScript**: All 137 criteria are defined as a typed array in `src/lib/server/criteria/criteria.ts`. VitalRules for deterministic/hybrid criteria are defined inline — no CSV parsing or natural-language extraction needed. The `trauma-criteria.csv` remains as the medical team's reference document but is not imported by the application. Validation tests ensure data integrity.
 
 2. **Class-based state with `$state` runes**: Idiomatic Svelte 5. Co-locates state and methods. Fully reactive when properties are read in `.svelte` files.
 
@@ -654,8 +702,6 @@ Replace `src/routes/+page.svelte` with the full composition of all components wi
 
 4. **No Superforms for input**: A single textarea doesn't warrant Superforms + Formsnap complexity. Validation happens server-side in the pipeline.
 
-5. **Classification lives in the CSV, not code**: Each criterion's `evaluation_method` column is the single source of truth. The code reads this column directly — no pattern-matching heuristics or hardcoded ID lists. Criteria can be reclassified by editing the CSV alone.
+5. **Mock extraction uses real regex**: The deterministic engine can be properly exercised even in mock mode, making development significantly easier.
 
-6. **Mock extraction uses real regex**: The deterministic engine can be properly exercised even in mock mode, making development significantly easier.
-
-7. **Hybrid criteria pattern**: The deterministic engine checks the numeric part, flags matches for LLM confirmation. This prevents false positives (e.g., HR > 100 without poor perfusion) while keeping numeric evaluation fast and deterministic.
+6. **Hybrid criteria pattern**: The deterministic engine checks the numeric part, flags matches for LLM confirmation. This prevents false positives (e.g., HR > 100 without poor perfusion) while keeping numeric evaluation fast and deterministic.

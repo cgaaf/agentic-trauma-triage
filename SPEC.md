@@ -31,7 +31,7 @@ When multiple activation levels are triggered, the highest level wins. If no cri
 - **Server**: SvelteKit server routes (`+server.ts`) — API keys stay server-side
 - **Streaming**: Server-Sent Events (SSE) for real-time result delivery
 - **API Key**: `ANTHROPIC_API_KEY` environment variable
-- **Data**: `trauma-criteria.csv` loaded at build time via Vite `?raw` import (CSV content is inlined into the server bundle; no runtime file reads)
+- **Data**: All 137 criteria hardcoded in a typed TypeScript file (`src/lib/server/criteria/criteria.ts`). The `trauma-criteria.csv` remains as the medical team's reference document but is not imported by the application
 - **Package Manager**: pnpm
 
 See `IMPLEMENTATION.md` for the complete file structure, component hierarchy, and implementation order.
@@ -151,18 +151,20 @@ Combines results from both parallel evaluations:
 
 ### Data Source
 
-Criteria are stored in `trauma-criteria.csv` with the following columns:
+Criteria are defined as a typed array in `src/lib/server/criteria/criteria.ts`. Each criterion has the following fields:
 
-| Column | Description |
+| Field | Description |
 |---|---|
-| `description` | Human-readable criterion text |
 | `id` | Unique criterion identifier |
-| `activation_level` | Level 1, Level 2, or Level 3 |
+| `description` | Human-readable criterion text |
+| `activationLevel` | Level 1, Level 2, or Level 3 |
 | `category` | Adult, Pediatric, or Geriatric |
-| `Age Range` | Human-readable age range label |
-| `age_min` | Minimum age (inclusive) |
-| `age_max` | Maximum age (inclusive), empty for geriatric (open-ended) |
-| `evaluation_method` | How the criterion is evaluated: `deterministic`, `hybrid`, or `llm` |
+| `ageMin` | Minimum age (inclusive) |
+| `ageMax` | Maximum age (inclusive), `null` for geriatric (open-ended) |
+| `evaluationMethod` | How the criterion is evaluated: `deterministic`, `hybrid`, or `llm` |
+| `vitalRule` | (Optional) Numeric comparison rule for deterministic/hybrid criteria |
+
+The `trauma-criteria.csv` remains in the repository as the medical team's reference document but is not imported by the application. VitalRules for deterministic and hybrid criteria are defined inline in the TypeScript file — no CSV parsing or natural-language extraction is needed.
 
 ### Age Categories
 
@@ -182,7 +184,7 @@ Criteria are stored in `trauma-criteria.csv` with the following columns:
 
 ### Criteria Classification
 
-Criteria are classified by evaluation method. Classification is stored directly in the CSV's `evaluation_method` column. No pattern-matching or hardcoded ID lists are used in code.
+Criteria are classified by their `evaluationMethod` field in the typed criteria array.
 
 | Method | Description | Examples |
 |---|---|---|
@@ -201,7 +203,7 @@ Classification principle: deterministic and hybrid criteria use the structured v
 
 ### Criteria Classification Map
 
-This table is derived from the CSV's `evaluation_method` column and is provided for quick reference. The CSV is authoritative.
+This table summarizes the deterministic and hybrid criteria. The typed criteria array in `src/lib/server/criteria/criteria.ts` is authoritative.
 
 #### Deterministic Criteria (20 total)
 
@@ -235,7 +237,7 @@ This table is derived from the CSV's `evaluation_method` column and is provided 
 | 2 | Adult L1 | HR > 100 | AND poor perfusion |
 | 100 | Geriatric L1 | HR > 90 | AND poor perfusion |
 
-Note: Pediatric tachycardia (ID 47) is classified as **LLM-only** because "associated tachycardia" lacks a specific numeric HR threshold in the CSV (pediatric tachycardia thresholds vary by age).
+Note: Pediatric tachycardia (ID 47) is classified as **LLM-only** because "associated tachycardia" lacks a specific numeric HR threshold (pediatric tachycardia thresholds vary by age).
 
 #### LLM-Only Criteria (115 total)
 
@@ -361,11 +363,32 @@ Plausibility ranges:
 
 ### Criteria Matches
 
-Matched criteria displayed grouped by activation level:
+Matched criteria displayed with a two-level grouping hierarchy:
 
-- **Level 1** group (with red accent)
-- **Level 2** group (with orange accent)
-- **Level 3** group (with yellow accent)
+- **Header**: Activation level — large, color-coded (e.g., "LEVEL 1" in red)
+- **Subheader**: Category and age range (e.g., "Adult (16 - 64)")
+
+```
+LEVEL 1                          ← header (large, color-coded)
+  Adult (16 - 64)                ← subheader (smaller)
+    • GCS < 12 — GCS = 8 < 12
+    • SBP < 90 — SBP = 75 < 90
+
+LEVEL 2                          ← header (large, color-coded)
+  Adult (16 - 64)                ← subheader
+    • GCS == 12 or 13 — GCS = 12
+```
+
+For boundary-age patients (e.g., a 16-year-old matching both Adult and Pediatric criteria), multiple subheaders appear:
+
+```
+LEVEL 1
+  Adult (16 - 64)
+    • GCS < 12 — GCS = 8 < 12
+LEVEL 3
+  Pediatric (0 - 17)
+    • Ejection from automobile — ...
+```
 
 Each matched criterion shows:
 - Description text
@@ -520,16 +543,16 @@ A purple "MOCK MODE" badge in the header when mock mode is active. Prevents conf
 
 ## 12. Key Types
 
-### Criterion (parsed CSV row)
+### Criterion
 
-The CSV is loaded at build time via Vite `?raw` import (CSV content is inlined into the server bundle) and parsed into a `Map<number, Criterion>` keyed by criterion ID. This enforces uniqueness and provides O(1) lookup by ID (used during merge/dedup and hybrid confirmation).
+All 137 criteria are hardcoded in a typed TypeScript array and exported as both a `Criterion[]` array and a `Map<number, Criterion>` keyed by criterion ID (for O(1) lookup during merge/dedup and hybrid confirmation).
 
 ```
 id: number
 description: string
 activationLevel: 'Level 1' | 'Level 2' | 'Level 3'
 category: 'Adult' | 'Pediatric' | 'Geriatric'
-ageRangeLabel: string
+ageRangeLabel: string           // Human-readable: "16 - 64", "0 - 15", "> 64"
 ageMin: number
 ageMax: number | null           // null = open-ended (geriatric)
 evaluationMethod: 'deterministic' | 'hybrid' | 'llm'
@@ -546,7 +569,7 @@ thresholdHigh?: number          // For range checks (e.g., GCS 12 or 13)
 requiresLlmConfirmation?: string // Qualitative condition for hybrid (e.g., "poor perfusion")
 ```
 
-The `evaluationMethod` is read directly from the CSV's `evaluation_method` column. The `vitalRule` is parsed from the description text for deterministic and hybrid criteria only (e.g., "GCS < 12" → `{ field: 'gcs', operator: '<', threshold: 12 }`).
+The `vitalRule` is defined inline in the typed criteria array for deterministic and hybrid criteria (e.g., `{ field: 'gcs', operator: '<', threshold: 12 }`).
 
 ### ExtractedFields (Phase 1 output)
 
@@ -569,6 +592,8 @@ additionalContext: string | null
 criterionId: number
 description: string
 activationLevel: 'Level 1' | 'Level 2' | 'Level 3'
+category: 'Adult' | 'Pediatric' | 'Geriatric'  // For display grouping (subheader)
+ageRangeLabel: string           // For display grouping (e.g., "16 - 64")
 source: 'deterministic' | 'llm'
 confidence?: number             // 0-1, LLM-sourced only
 triggerReason: string           // e.g., "GCS = 8 < 12"
