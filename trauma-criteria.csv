@@ -1,138 +1,138 @@
-﻿description,id,activation_level,category,Age Range,age_min,age_max
-Glasgow coma score (GCS) < 12,1,Level 1,Adult,16 - 64,16,64
-Injury with associated tachycardia (Heart Rate (HR) > 100) AND poor perfusion,2,Level 1,Adult,16 - 64,16,64
-Systolic Blood Pressure (SBP) < 90,3,Level 1,Adult,16 - 64,16,64
-Respiratory rate (RR) < 10,4,Level 1,Adult,16 - 64,16,64
-Respiratory rate (RR) > 29,5,Level 1,Adult,16 - 64,16,64
-Respiratory distress,6,Level 1,Adult,16 - 64,16,64
-Intubated,7,Level 1,Adult,16 - 64,16,64
-Flail chest,8,Level 1,Adult,16 - 64,16,64
-"Pleural decompression (needle decompression, chest tube placement, finger thoracostomy)",9,Level 1,Adult,16 - 64,16,64
-Penetrating injury to the head,10,Level 1,Adult,16 - 64,16,64
-Penetrating injury or significant wound to the neck,11,Level 1,Adult,16 - 64,16,64
-"Penetrating injury to the torso (chest, back or abdomen)",12,Level 1,Adult,16 - 64,16,64
-"Penetrating injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",13,Level 1,Adult,16 - 64,16,64
-Penetrating injury to the leg proximal to the knee (groin or thigh),14,Level 1,Adult,16 - 64,16,64
-Suspected or identified pelvic fracture,15,Level 1,Adult,16 - 64,16,64
-Paralysis related to trauma,16,Level 1,Adult,16 - 64,16,64
-Pulseless extremity (arm or leg),17,Level 1,Adult,16 - 64,16,64
-"Crush or degloving injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",18,Level 1,Adult,16 - 64,16,64
-"Mangled arm proximal to the elbow (shoulder, axilla, bicep or tricep)",19,Level 1,Adult,16 - 64,16,64
-Crush or degloving injury to the leg proximal to the knee (groin or thigh),20,Level 1,Adult,16 - 64,16,64
-Mangled leg proximal to the knee (groin or thigh),21,Level 1,Adult,16 - 64,16,64
-Full or partial thickness (2nd or 3rd degree) burns > 20% of total body surface area (TBSA),22,Level 1,Adult,16 - 64,16,64
-Airway burns or concern for inhalational injury / burn,23,Level 1,Adult,16 - 64,16,64
-Electrocution / electric shock with high voltage or greater than household current ( > 120 volts),24,Level 1,Adult,16 - 64,16,64
-"Blood product administration related to trauma - whole blood, packed red blood cells (RBC), fresh frozen plasma (FFP), platelets",25,Level 1,Adult,16 - 64,16,64
-Glasgow coma scale (GCS) == 12 or 13,26,Level 2,Adult,16 - 64,16,64
-Fall from > 15 feet height,27,Level 2,Adult,16 - 64,16,64
-"High speed (≥ 55 mph) automobile crash AND suspected significant injuries (e.g., non-ambulatory)",28,Level 2,Adult,16 - 64,16,64
-"Motorcycle crash AND suspected significant injuries (e.g., non-ambulatory)",29,Level 2,Adult,16 - 64,16,64
-Pedestrian hit by an automobile (automobile vs pedestrian) > 10 mph AND significant impact or suspected significant injuries,30,Level 2,Adult,16 - 64,16,64
-Bicyclist hit by an automobile (automobile vs bicycle) > 10 mph AND significant impact or suspected significant injuries,31,Level 2,Adult,16 - 64,16,64
-Active bleeding requiring a tourniquet or wound packing,32,Level 2,Adult,16 - 64,16,64
-Poorly controlled bleeding despite pressure or bandaging,33,Level 2,Adult,16 - 64,16,64
-More than one open fracture (excluding the hands or feet),34,Level 2,Adult,16 - 64,16,64
-"More than one suspected long bone fracture (thigh, leg, arm, femur, humerus, tibia). This does not include hands or feet. This may be described as a deformity or shortening.",35,Level 2,Adult,16 - 64,16,64
-Full or partial thickness (2nd or 3rd degree) burns between 10% and 20% of total body surface area (TBSA),36,Level 2,Adult,16 - 64,16,64
-Full or partial thickness (2nd or 3rd degree) burns to the face without suspected inhalation or airway injury.,37,Level 2,Adult,16 - 64,16,64
-Pregnancy > 20 weeks gestational age AND abdominal or pelvic pain,38,Level 2,Adult,16 - 64,16,64
-Pregnancy > 20 weeks gestational age AND vaginal bleeding,39,Level 2,Adult,16 - 64,16,64
-Pregnancy > 20 weeks gestational age AND evidence of active labor,40,Level 2,Adult,16 - 64,16,64
-Ejection from an automobile,41,Level 3,Adult,18 - 64,18,64
-Moped crash with speed > 25 mph,42,Level 3,Adult,18 - 64,18,64
-Bicycle crash with speed > 25 mph,43,Level 3,Adult,18 - 64,18,64
-Death of another passenger in the SAME vehicle as the patient,44,Level 3,Adult,18 - 64,18,64
-"Pregnancy > 20 weeks gestational age WITHOUT abdominal pain, pelvic pain, vaginal bleeding or evidence of active labor",45,Level 3,Adult,18 - 64,18,64
-Glasgow coma score (GCS) < 12,46,Level 1,Pediatric,0 - 15,0,15
-Injury with associated tachycardia AND evidence of poor perfusion,47,Level 1,Pediatric,0 - 15,0,15
-Systolic blood pressure (SBP) ≤ 90 for patients age 10 - 15,57,Level 1,Pediatric,0 - 15,10,15
-Respiratory distress,58,Level 1,Pediatric,0 - 15,0,15
-"Intubated - Endotracheal (ET) tube, Laryngeal mask airway (LMA, iGel)",59,Level 1,Pediatric,0 - 15,0,15
-Flail chest,60,Level 1,Pediatric,0 - 15,0,15
-"Pleural decompression (needle decompression, chest tube)",61,Level 1,Pediatric,0 - 15,0,15
-Penetrating injury to the head,62,Level 1,Pediatric,0 - 15,0,15
-Penetrating injury or significant wound to the neck,63,Level 1,Pediatric,0 - 15,0,15
-"Penetrating injury to the torso (chest, back or abdomen)",64,Level 1,Pediatric,0 - 15,0,15
-"Penetrating injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",65,Level 1,Pediatric,0 - 15,0,15
-Penetrating injury to the leg proximal to the knee (groin or thigh),66,Level 1,Pediatric,0 - 15,0,15
-Suspected or identified pelvic fracture,67,Level 1,Pediatric,0 - 15,0,15
-Paralysis related to trauma,68,Level 1,Pediatric,0 - 15,0,15
-Pulseless extremity (arm or leg),69,Level 1,Pediatric,0 - 15,0,15
-"Crush or degloving injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",70,Level 1,Pediatric,0 - 15,0,15
-"Mangled arm proximal to the elbow (shoulder, axilla, bicep or tricep)",71,Level 1,Pediatric,0 - 15,0,15
-Crush or degloving injury to the leg proximal to the knee (groin or thigh),72,Level 1,Pediatric,0 - 15,0,15
-Mangled leg proximal to the knee (groin or thigh),73,Level 1,Pediatric,0 - 15,0,15
-Full or partial thickness (2nd or 3rd degree) burns > 20% of total body surface area (TBSA),74,Level 1,Pediatric,0 - 15,0,15
-Airway burns or concern for inhalational injury / burn,75,Level 1,Pediatric,0 - 15,0,15
-Electrocution / electric shock with high voltage or greater than household current ( > 120 volts),76,Level 1,Pediatric,0 - 15,0,15
-"Blood product administration related to trauma - whole blood, packed red blood cells (RBC), fresh frozen plasma (FFP), platelets",77,Level 1,Pediatric,0 - 15,0,15
-Glasgow coma score (GCS) = 12 or 13,78,Level 2,Pediatric,0 - 15,0,15
-Fall from > 5 feet height (consider height of object),79,Level 2,Pediatric,0 - 15,0,15
-High speed (≥ 55 mph) automobile crash AND significant vehicle damage,80,Level 2,Pediatric,0 - 15,0,15
-Motorcycle crash (MCC) with significant impact,81,Level 2,Pediatric,0 - 15,0,15
-ATV crash with significant impact,82,Level 2,Pediatric,0 - 15,0,15
-Moped crash with significant impact,83,Level 2,Pediatric,0 - 15,0,15
-Golf cart crash with significant impact,84,Level 2,Pediatric,0 - 15,0,15
-Go cart crash with significant impact,85,Level 2,Pediatric,0 - 15,0,15
-Pedestrian hit by an automobile (auto vs pedestrian) with significant impact,86,Level 2,Pediatric,0 - 15,0,15
-Bicyclist hit by an automobile (auto vs bicycle) with significant impact,87,Level 2,Pediatric,0 - 15,0,15
-Active bleeding requiring a tourniquet or wound packing,88,Level 2,Pediatric,0 - 15,0,15
-Poorly controlled bleeding despite pressure or bandaging,89,Level 2,Pediatric,0 - 15,0,15
-More than one open fracture (excluding the hands or feet),90,Level 2,Pediatric,0 - 15,0,15
-"More than one suspected long bone fracture (thigh, leg, arm, femur, humerus, tibia). This does not include hands or feet.",91,Level 2,Pediatric,0 - 15,0,15
-Full or partial thickness (2nd or 3rd degree) burns between 10% and 20% of total body surface area (TBSA),92,Level 2,Pediatric,0 - 15,0,15
-Full or partial thickness burns to the face without suspected inhalation or airway injury.,93,Level 2,Pediatric,0 - 15,0,15
-Significant neurological deficit (extremity numbness),94,Level 2,Pediatric,0 - 15,0,15
-Ejection from an automobile,95,Level 3,Pediatric,0 - 17,0,17
-Seatbelt sign (bruising or wounds over the abdomen or chest caused by a seatbelt),96,Level 3,Pediatric,0 - 17,0,17
-Potential handlebar injury (injury to the abdomen caused by the handlebar during a bicycle accident),97,Level 3,Pediatric,0 - 17,0,17
-Death of another passenger in the SAME vehicle as the patient,98,Level 3,Pediatric,0 - 17,0,17
-Glasgow coma score (GCS) < 12,99,Level 1,Geriatric,> 64,65,
-Injury with associated tachycardia (Heart Rate (HR) > 90) AND poor perfusion,100,Level 1,Geriatric,> 64,65,
-Systolic blood pressure (SBP) < 110,101,Level 1,Geriatric,> 64,65,
-Respiratory distress,102,Level 1,Geriatric,> 64,65,
-"Intubated - Endotracheal (ET) tube, Laryngeal mask airway (LMA, iGel)",103,Level 1,Geriatric,> 64,65,
-Flail chest,104,Level 1,Geriatric,> 64,65,
-"Pleural decompression (needle decompression, chest tube)",105,Level 1,Geriatric,> 64,65,
-Penetrating injury to the head,106,Level 1,Geriatric,> 64,65,
-Penetrating injury or significant wound to the neck,107,Level 1,Geriatric,> 64,65,
-"Penetrating injury to the torso (chest, back or abdomen)",108,Level 1,Geriatric,> 64,65,
-"Penetrating injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",109,Level 1,Geriatric,> 64,65,
-Penetrating injury to the leg proximal to the knee (groin or thigh),110,Level 1,Geriatric,> 64,65,
-Suspected or identified pelvic fracture,111,Level 1,Geriatric,> 64,65,
-Paralysis related to trauma,112,Level 1,Geriatric,> 64,65,
-Pulseless extremity (arm or leg),113,Level 1,Geriatric,> 64,65,
-"Crush or degloving injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",114,Level 1,Geriatric,> 64,65,
-"Mangled arm proximal to the elbow (shoulder, axilla, bicep or tricep)",115,Level 1,Geriatric,> 64,65,
-Crush or degloving injury to the leg proximal to the knee (groin or thigh),116,Level 1,Geriatric,> 64,65,
-Mangled leg proximal to the knee (groin or thigh),117,Level 1,Geriatric,> 64,65,
-Full or partial thickness (2nd or 3rd degree) burns > 20% of total body surface area (TBSA),118,Level 1,Geriatric,> 64,65,
-Airway burns or concern for inhalational injury / burn,119,Level 1,Geriatric,> 64,65,
-Electrocution / electric shock with high voltage or greater than household current ( > 120 volts),120,Level 1,Geriatric,> 64,65,
-"Blood product administration related to trauma - whole blood, packed red blood cells (RBC), fresh frozen plasma (FFP), platelets",121,Level 1,Geriatric,> 64,65,
-Falls > 5 feet (non-ground level),122,Level 1,Geriatric,> 64,65,
-Glasgow coma score (GCS) = 12 or 13,123,Level 2,Geriatric,> 64,65,
-"High speed (≥ 55 mph) automobile crash AND suspected significant injuries (e.g., non-ambulatory)",124,Level 2,Geriatric,> 64,65,
-"Motorcycle crash AND suspected significant injuries (e.g., non-ambulatory)",125,Level 2,Geriatric,> 64,65,
-Pedestrian hit by an automobile (automobile vs pedestrian) > 10 mph AND significant impact or suspected significant injuries,126,Level 2,Geriatric,> 64,65,
-Bicyclist hit by an automobile (automobile vs bicycle) > 10 mph AND significant impact or suspected significant injuries,127,Level 2,Geriatric,> 64,65,
-Active bleeding requiring a tourniquet or wound packing,128,Level 2,Geriatric,> 64,65,
-Poorly controlled bleeding despite pressure or bandaging,129,Level 2,Geriatric,> 64,65,
-More than one open fracture (excluding the hands or feet),130,Level 2,Geriatric,> 64,65,
-"More than one suspected long bone fracture (thigh, leg, arm, femur, humerus, tibia). This does not include hands or feet.",131,Level 2,Geriatric,> 64,65,
-Full or partial thickness (2nd or 3rd degree) burns between 10% and 20% of total body surface area (TBSA),132,Level 2,Geriatric,> 64,65,
-Full or partial thickness (2nd or 3rd degree) burns to the face without suspected inhalation or airway injury.,133,Level 2,Geriatric,> 64,65,
-Ejection from an automobile,134,Level 3,Geriatric,> 64,65,
-Bicycle crash with speed > 25 mph,135,Level 3,Geriatric,> 64,65,
-Moped crash with speed > 25 mph,136,Level 3,Geriatric,> 64,65,
-Death of another passenger in the SAME vehicle as the patient,137,Level 3,Geriatric,> 64,65,
-Systolic blood pressure (SBP) < 70 mmHg for age 0 - 12 months ( ≤ 1 year),48,Level 1,Pediatric,0 - 15,0,1
-Systolic blood pressure (SBP) < 74 mmHg for a 2 year old,49,Level 1,Pediatric,0 - 15,2,2
-Systolic blood pressure (SBP) < 76 mmHg for a 3 year old,50,Level 1,Pediatric,0 - 15,3,3
-Systolic blood pressure (SBP) < 78 mmHg for a 4 year old,51,Level 1,Pediatric,0 - 15,4,4
-Systolic blood pressure (SBP) < 80 mmHg for a 5 year old,52,Level 1,Pediatric,0 - 15,5,5
-Systolic blood pressure (SBP) < 82 mmHg for a 6 year old,53,Level 1,Pediatric,0 - 15,6,6
-Systolic blood pressure (SBP) < 84 mmHg for a 7 year old,54,Level 1,Pediatric,0 - 15,7,7
-Systolic blood pressure (SBP) < 86 mmHg for an 8 year old,55,Level 1,Pediatric,0 - 15,8,8
-Systolic blood pressure (SBP) < 88 mmHg for a 9 year old,56,Level 1,Pediatric,0 - 15,9,9
+﻿description,id,activation_level,category,Age Range,age_min,age_max,evaluation_method
+Glasgow coma score (GCS) < 12,1,Level 1,Adult,16 - 64,16,64,deterministic
+Injury with associated tachycardia (Heart Rate (HR) > 100) AND poor perfusion,2,Level 1,Adult,16 - 64,16,64,hybrid
+Systolic Blood Pressure (SBP) < 90,3,Level 1,Adult,16 - 64,16,64,deterministic
+Respiratory rate (RR) < 10,4,Level 1,Adult,16 - 64,16,64,deterministic
+Respiratory rate (RR) > 29,5,Level 1,Adult,16 - 64,16,64,deterministic
+Respiratory distress,6,Level 1,Adult,16 - 64,16,64,llm
+Intubated,7,Level 1,Adult,16 - 64,16,64,llm
+Flail chest,8,Level 1,Adult,16 - 64,16,64,llm
+"Pleural decompression (needle decompression, chest tube placement, finger thoracostomy)",9,Level 1,Adult,16 - 64,16,64,llm
+Penetrating injury to the head,10,Level 1,Adult,16 - 64,16,64,llm
+Penetrating injury or significant wound to the neck,11,Level 1,Adult,16 - 64,16,64,llm
+"Penetrating injury to the torso (chest, back or abdomen)",12,Level 1,Adult,16 - 64,16,64,llm
+"Penetrating injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",13,Level 1,Adult,16 - 64,16,64,llm
+Penetrating injury to the leg proximal to the knee (groin or thigh),14,Level 1,Adult,16 - 64,16,64,llm
+Suspected or identified pelvic fracture,15,Level 1,Adult,16 - 64,16,64,llm
+Paralysis related to trauma,16,Level 1,Adult,16 - 64,16,64,llm
+Pulseless extremity (arm or leg),17,Level 1,Adult,16 - 64,16,64,llm
+"Crush or degloving injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",18,Level 1,Adult,16 - 64,16,64,llm
+"Mangled arm proximal to the elbow (shoulder, axilla, bicep or tricep)",19,Level 1,Adult,16 - 64,16,64,llm
+Crush or degloving injury to the leg proximal to the knee (groin or thigh),20,Level 1,Adult,16 - 64,16,64,llm
+Mangled leg proximal to the knee (groin or thigh),21,Level 1,Adult,16 - 64,16,64,llm
+Full or partial thickness (2nd or 3rd degree) burns > 20% of total body surface area (TBSA),22,Level 1,Adult,16 - 64,16,64,llm
+Airway burns or concern for inhalational injury / burn,23,Level 1,Adult,16 - 64,16,64,llm
+Electrocution / electric shock with high voltage or greater than household current ( > 120 volts),24,Level 1,Adult,16 - 64,16,64,llm
+"Blood product administration related to trauma - whole blood, packed red blood cells (RBC), fresh frozen plasma (FFP), platelets",25,Level 1,Adult,16 - 64,16,64,llm
+Glasgow coma scale (GCS) == 12 or 13,26,Level 2,Adult,16 - 64,16,64,deterministic
+Fall from > 15 feet height,27,Level 2,Adult,16 - 64,16,64,llm
+"High speed (≥ 55 mph) automobile crash AND suspected significant injuries (e.g., non-ambulatory)",28,Level 2,Adult,16 - 64,16,64,llm
+"Motorcycle crash AND suspected significant injuries (e.g., non-ambulatory)",29,Level 2,Adult,16 - 64,16,64,llm
+Pedestrian hit by an automobile (automobile vs pedestrian) > 10 mph AND significant impact or suspected significant injuries,30,Level 2,Adult,16 - 64,16,64,llm
+Bicyclist hit by an automobile (automobile vs bicycle) > 10 mph AND significant impact or suspected significant injuries,31,Level 2,Adult,16 - 64,16,64,llm
+Active bleeding requiring a tourniquet or wound packing,32,Level 2,Adult,16 - 64,16,64,llm
+Poorly controlled bleeding despite pressure or bandaging,33,Level 2,Adult,16 - 64,16,64,llm
+More than one open fracture (excluding the hands or feet),34,Level 2,Adult,16 - 64,16,64,llm
+"More than one suspected long bone fracture (thigh, leg, arm, femur, humerus, tibia). This does not include hands or feet. This may be described as a deformity or shortening.",35,Level 2,Adult,16 - 64,16,64,llm
+Full or partial thickness (2nd or 3rd degree) burns between 10% and 20% of total body surface area (TBSA),36,Level 2,Adult,16 - 64,16,64,llm
+Full or partial thickness (2nd or 3rd degree) burns to the face without suspected inhalation or airway injury.,37,Level 2,Adult,16 - 64,16,64,llm
+Pregnancy > 20 weeks gestational age AND abdominal or pelvic pain,38,Level 2,Adult,16 - 64,16,64,llm
+Pregnancy > 20 weeks gestational age AND vaginal bleeding,39,Level 2,Adult,16 - 64,16,64,llm
+Pregnancy > 20 weeks gestational age AND evidence of active labor,40,Level 2,Adult,16 - 64,16,64,llm
+Ejection from an automobile,41,Level 3,Adult,18 - 64,18,64,llm
+Moped crash with speed > 25 mph,42,Level 3,Adult,18 - 64,18,64,llm
+Bicycle crash with speed > 25 mph,43,Level 3,Adult,18 - 64,18,64,llm
+Death of another passenger in the SAME vehicle as the patient,44,Level 3,Adult,18 - 64,18,64,llm
+"Pregnancy > 20 weeks gestational age WITHOUT abdominal pain, pelvic pain, vaginal bleeding or evidence of active labor",45,Level 3,Adult,18 - 64,18,64,llm
+Glasgow coma score (GCS) < 12,46,Level 1,Pediatric,0 - 15,0,15,deterministic
+Injury with associated tachycardia AND evidence of poor perfusion,47,Level 1,Pediatric,0 - 15,0,15,llm
+Systolic blood pressure (SBP) ≤ 90 for patients age 10 - 15,57,Level 1,Pediatric,0 - 15,10,15,deterministic
+Respiratory distress,58,Level 1,Pediatric,0 - 15,0,15,llm
+"Intubated - Endotracheal (ET) tube, Laryngeal mask airway (LMA, iGel)",59,Level 1,Pediatric,0 - 15,0,15,llm
+Flail chest,60,Level 1,Pediatric,0 - 15,0,15,llm
+"Pleural decompression (needle decompression, chest tube)",61,Level 1,Pediatric,0 - 15,0,15,llm
+Penetrating injury to the head,62,Level 1,Pediatric,0 - 15,0,15,llm
+Penetrating injury or significant wound to the neck,63,Level 1,Pediatric,0 - 15,0,15,llm
+"Penetrating injury to the torso (chest, back or abdomen)",64,Level 1,Pediatric,0 - 15,0,15,llm
+"Penetrating injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",65,Level 1,Pediatric,0 - 15,0,15,llm
+Penetrating injury to the leg proximal to the knee (groin or thigh),66,Level 1,Pediatric,0 - 15,0,15,llm
+Suspected or identified pelvic fracture,67,Level 1,Pediatric,0 - 15,0,15,llm
+Paralysis related to trauma,68,Level 1,Pediatric,0 - 15,0,15,llm
+Pulseless extremity (arm or leg),69,Level 1,Pediatric,0 - 15,0,15,llm
+"Crush or degloving injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",70,Level 1,Pediatric,0 - 15,0,15,llm
+"Mangled arm proximal to the elbow (shoulder, axilla, bicep or tricep)",71,Level 1,Pediatric,0 - 15,0,15,llm
+Crush or degloving injury to the leg proximal to the knee (groin or thigh),72,Level 1,Pediatric,0 - 15,0,15,llm
+Mangled leg proximal to the knee (groin or thigh),73,Level 1,Pediatric,0 - 15,0,15,llm
+Full or partial thickness (2nd or 3rd degree) burns > 20% of total body surface area (TBSA),74,Level 1,Pediatric,0 - 15,0,15,llm
+Airway burns or concern for inhalational injury / burn,75,Level 1,Pediatric,0 - 15,0,15,llm
+Electrocution / electric shock with high voltage or greater than household current ( > 120 volts),76,Level 1,Pediatric,0 - 15,0,15,llm
+"Blood product administration related to trauma - whole blood, packed red blood cells (RBC), fresh frozen plasma (FFP), platelets",77,Level 1,Pediatric,0 - 15,0,15,llm
+Glasgow coma score (GCS) = 12 or 13,78,Level 2,Pediatric,0 - 15,0,15,deterministic
+Fall from > 5 feet height (consider height of object),79,Level 2,Pediatric,0 - 15,0,15,llm
+High speed (≥ 55 mph) automobile crash AND significant vehicle damage,80,Level 2,Pediatric,0 - 15,0,15,llm
+Motorcycle crash (MCC) with significant impact,81,Level 2,Pediatric,0 - 15,0,15,llm
+ATV crash with significant impact,82,Level 2,Pediatric,0 - 15,0,15,llm
+Moped crash with significant impact,83,Level 2,Pediatric,0 - 15,0,15,llm
+Golf cart crash with significant impact,84,Level 2,Pediatric,0 - 15,0,15,llm
+Go cart crash with significant impact,85,Level 2,Pediatric,0 - 15,0,15,llm
+Pedestrian hit by an automobile (auto vs pedestrian) with significant impact,86,Level 2,Pediatric,0 - 15,0,15,llm
+Bicyclist hit by an automobile (auto vs bicycle) with significant impact,87,Level 2,Pediatric,0 - 15,0,15,llm
+Active bleeding requiring a tourniquet or wound packing,88,Level 2,Pediatric,0 - 15,0,15,llm
+Poorly controlled bleeding despite pressure or bandaging,89,Level 2,Pediatric,0 - 15,0,15,llm
+More than one open fracture (excluding the hands or feet),90,Level 2,Pediatric,0 - 15,0,15,llm
+"More than one suspected long bone fracture (thigh, leg, arm, femur, humerus, tibia). This does not include hands or feet.",91,Level 2,Pediatric,0 - 15,0,15,llm
+Full or partial thickness (2nd or 3rd degree) burns between 10% and 20% of total body surface area (TBSA),92,Level 2,Pediatric,0 - 15,0,15,llm
+Full or partial thickness burns to the face without suspected inhalation or airway injury.,93,Level 2,Pediatric,0 - 15,0,15,llm
+Significant neurological deficit (extremity numbness),94,Level 2,Pediatric,0 - 15,0,15,llm
+Ejection from an automobile,95,Level 3,Pediatric,0 - 17,0,17,llm
+Seatbelt sign (bruising or wounds over the abdomen or chest caused by a seatbelt),96,Level 3,Pediatric,0 - 17,0,17,llm
+Potential handlebar injury (injury to the abdomen caused by the handlebar during a bicycle accident),97,Level 3,Pediatric,0 - 17,0,17,llm
+Death of another passenger in the SAME vehicle as the patient,98,Level 3,Pediatric,0 - 17,0,17,llm
+Glasgow coma score (GCS) < 12,99,Level 1,Geriatric,> 64,65,,deterministic
+Injury with associated tachycardia (Heart Rate (HR) > 90) AND poor perfusion,100,Level 1,Geriatric,> 64,65,,hybrid
+Systolic blood pressure (SBP) < 110,101,Level 1,Geriatric,> 64,65,,deterministic
+Respiratory distress,102,Level 1,Geriatric,> 64,65,,llm
+"Intubated - Endotracheal (ET) tube, Laryngeal mask airway (LMA, iGel)",103,Level 1,Geriatric,> 64,65,,llm
+Flail chest,104,Level 1,Geriatric,> 64,65,,llm
+"Pleural decompression (needle decompression, chest tube)",105,Level 1,Geriatric,> 64,65,,llm
+Penetrating injury to the head,106,Level 1,Geriatric,> 64,65,,llm
+Penetrating injury or significant wound to the neck,107,Level 1,Geriatric,> 64,65,,llm
+"Penetrating injury to the torso (chest, back or abdomen)",108,Level 1,Geriatric,> 64,65,,llm
+"Penetrating injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",109,Level 1,Geriatric,> 64,65,,llm
+Penetrating injury to the leg proximal to the knee (groin or thigh),110,Level 1,Geriatric,> 64,65,,llm
+Suspected or identified pelvic fracture,111,Level 1,Geriatric,> 64,65,,llm
+Paralysis related to trauma,112,Level 1,Geriatric,> 64,65,,llm
+Pulseless extremity (arm or leg),113,Level 1,Geriatric,> 64,65,,llm
+"Crush or degloving injury to the arm proximal to the elbow (shoulder, axilla, bicep or tricep)",114,Level 1,Geriatric,> 64,65,,llm
+"Mangled arm proximal to the elbow (shoulder, axilla, bicep or tricep)",115,Level 1,Geriatric,> 64,65,,llm
+Crush or degloving injury to the leg proximal to the knee (groin or thigh),116,Level 1,Geriatric,> 64,65,,llm
+Mangled leg proximal to the knee (groin or thigh),117,Level 1,Geriatric,> 64,65,,llm
+Full or partial thickness (2nd or 3rd degree) burns > 20% of total body surface area (TBSA),118,Level 1,Geriatric,> 64,65,,llm
+Airway burns or concern for inhalational injury / burn,119,Level 1,Geriatric,> 64,65,,llm
+Electrocution / electric shock with high voltage or greater than household current ( > 120 volts),120,Level 1,Geriatric,> 64,65,,llm
+"Blood product administration related to trauma - whole blood, packed red blood cells (RBC), fresh frozen plasma (FFP), platelets",121,Level 1,Geriatric,> 64,65,,llm
+Falls > 5 feet (non-ground level),122,Level 1,Geriatric,> 64,65,,llm
+Glasgow coma score (GCS) = 12 or 13,123,Level 2,Geriatric,> 64,65,,deterministic
+"High speed (≥ 55 mph) automobile crash AND suspected significant injuries (e.g., non-ambulatory)",124,Level 2,Geriatric,> 64,65,,llm
+"Motorcycle crash AND suspected significant injuries (e.g., non-ambulatory)",125,Level 2,Geriatric,> 64,65,,llm
+Pedestrian hit by an automobile (automobile vs pedestrian) > 10 mph AND significant impact or suspected significant injuries,126,Level 2,Geriatric,> 64,65,,llm
+Bicyclist hit by an automobile (automobile vs bicycle) > 10 mph AND significant impact or suspected significant injuries,127,Level 2,Geriatric,> 64,65,,llm
+Active bleeding requiring a tourniquet or wound packing,128,Level 2,Geriatric,> 64,65,,llm
+Poorly controlled bleeding despite pressure or bandaging,129,Level 2,Geriatric,> 64,65,,llm
+More than one open fracture (excluding the hands or feet),130,Level 2,Geriatric,> 64,65,,llm
+"More than one suspected long bone fracture (thigh, leg, arm, femur, humerus, tibia). This does not include hands or feet.",131,Level 2,Geriatric,> 64,65,,llm
+Full or partial thickness (2nd or 3rd degree) burns between 10% and 20% of total body surface area (TBSA),132,Level 2,Geriatric,> 64,65,,llm
+Full or partial thickness (2nd or 3rd degree) burns to the face without suspected inhalation or airway injury.,133,Level 2,Geriatric,> 64,65,,llm
+Ejection from an automobile,134,Level 3,Geriatric,> 64,65,,llm
+Bicycle crash with speed > 25 mph,135,Level 3,Geriatric,> 64,65,,llm
+Moped crash with speed > 25 mph,136,Level 3,Geriatric,> 64,65,,llm
+Death of another passenger in the SAME vehicle as the patient,137,Level 3,Geriatric,> 64,65,,llm
+Systolic blood pressure (SBP) < 70 mmHg for age 0 - 12 months ( ≤ 1 year),48,Level 1,Pediatric,0 - 15,0,1,deterministic
+Systolic blood pressure (SBP) < 74 mmHg for a 2 year old,49,Level 1,Pediatric,0 - 15,2,2,deterministic
+Systolic blood pressure (SBP) < 76 mmHg for a 3 year old,50,Level 1,Pediatric,0 - 15,3,3,deterministic
+Systolic blood pressure (SBP) < 78 mmHg for a 4 year old,51,Level 1,Pediatric,0 - 15,4,4,deterministic
+Systolic blood pressure (SBP) < 80 mmHg for a 5 year old,52,Level 1,Pediatric,0 - 15,5,5,deterministic
+Systolic blood pressure (SBP) < 82 mmHg for a 6 year old,53,Level 1,Pediatric,0 - 15,6,6,deterministic
+Systolic blood pressure (SBP) < 84 mmHg for a 7 year old,54,Level 1,Pediatric,0 - 15,7,7,deterministic
+Systolic blood pressure (SBP) < 86 mmHg for an 8 year old,55,Level 1,Pediatric,0 - 15,8,8,deterministic
+Systolic blood pressure (SBP) < 88 mmHg for a 9 year old,56,Level 1,Pediatric,0 - 15,9,9,deterministic

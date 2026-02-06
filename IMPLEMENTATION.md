@@ -183,12 +183,12 @@ Parsing logic:
 1. Strip BOM character (`\uFEFF`) from the start
 2. Split by newlines, handle quoted fields containing commas
 3. For each row, create a `Criterion` object
-4. Classify `evaluationMethod` by pattern-matching the description:
-   - Look for vital sign patterns: `GCS < N`, `SBP < N`, `RR < N`, `RR > N`, `GCS = 12 or 13`, `SBP ≤ N`
-   - HR patterns with "AND poor perfusion" → hybrid
-   - Everything else → LLM-only
-5. Parse `VitalRule` from description for deterministic/hybrid criteria
-6. Handle empty `age_max` for geriatric criteria → store as `null`
+4. Read `evaluation_method` column directly → `evaluationMethod` field
+5. For deterministic/hybrid criteria only: parse `VitalRule` from description
+   (e.g., "GCS < 12" → `{ field: 'gcs', operator: '<', threshold: 12 }`)
+6. For hybrid criteria: additionally parse the qualitative condition
+   (e.g., "AND poor perfusion" → `requiresLlmConfirmation: 'poor perfusion'`)
+7. Handle empty `age_max` for geriatric criteria → store as `null`
 7. Export `const CRITERIA: Map<number, Criterion>` keyed by criterion ID (enforces uniqueness, O(1) lookup during merge/dedup)
 
 **Deterministic criteria IDs** (from CSV analysis):
@@ -654,7 +654,7 @@ Replace `src/routes/+page.svelte` with the full composition of all components wi
 
 4. **No Superforms for input**: A single textarea doesn't warrant Superforms + Formsnap complexity. Validation happens server-side in the pipeline.
 
-5. **Pediatric tachycardia (id=47) as LLM-only**: Unlike adult/geriatric which specify numeric HR thresholds, the pediatric criterion says "associated tachycardia" without a number. Delegated to LLM.
+5. **Classification lives in the CSV, not code**: Each criterion's `evaluation_method` column is the single source of truth. The code reads this column directly — no pattern-matching heuristics or hardcoded ID lists. Criteria can be reclassified by editing the CSV alone.
 
 6. **Mock extraction uses real regex**: The deterministic engine can be properly exercised even in mock mode, making development significantly easier.
 

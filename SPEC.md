@@ -162,6 +162,7 @@ Criteria are stored in `trauma-criteria.csv` with the following columns:
 | `Age Range` | Human-readable age range label |
 | `age_min` | Minimum age (inclusive) |
 | `age_max` | Maximum age (inclusive), empty for geriatric (open-ended) |
+| `evaluation_method` | How the criterion is evaluated: `deterministic`, `hybrid`, or `llm` |
 
 ### Age Categories
 
@@ -181,7 +182,7 @@ Criteria are stored in `trauma-criteria.csv` with the following columns:
 
 ### Criteria Classification
 
-Criteria are classified by evaluation method:
+Criteria are classified by evaluation method. Classification is stored directly in the CSV's `evaluation_method` column. No pattern-matching or hardcoded ID lists are used in code.
 
 | Method | Description | Examples |
 |---|---|---|
@@ -200,7 +201,7 @@ Classification principle: deterministic and hybrid criteria use the structured v
 
 ### Criteria Classification Map
 
-Classification is based on whether a criterion can be evaluated using the structured vital sign fields extracted in Phase 1 (age, GCS, SBP, HR, RR). Criteria with other numeric values (fall height, vehicle speed, TBSA%) are LLM-only because those values are not extracted as structured fields.
+This table is derived from the CSV's `evaluation_method` column and is provided for quick reference. The CSV is authoritative.
 
 #### Deterministic Criteria (20 total)
 
@@ -545,7 +546,7 @@ thresholdHigh?: number          // For range checks (e.g., GCS 12 or 13)
 requiresLlmConfirmation?: string // Qualitative condition for hybrid (e.g., "poor perfusion")
 ```
 
-The `evaluationMethod` and `vitalRule` are derived during CSV parsing by pattern-matching the description text (e.g., "GCS < 12" → deterministic, "HR > 100 AND poor perfusion" → hybrid). The classification map in Section 4 is the authoritative reference for which IDs get which classification.
+The `evaluationMethod` is read directly from the CSV's `evaluation_method` column. The `vitalRule` is parsed from the description text for deterministic and hybrid criteria only (e.g., "GCS < 12" → `{ field: 'gcs', operator: '<', threshold: 12 }`).
 
 ### ExtractedFields (Phase 1 output)
 
