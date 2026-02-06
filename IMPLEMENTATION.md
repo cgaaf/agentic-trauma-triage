@@ -189,7 +189,7 @@ Parsing logic:
    - Everything else → LLM-only
 5. Parse `VitalRule` from description for deterministic/hybrid criteria
 6. Handle empty `age_max` for geriatric criteria → store as `null`
-7. Export `const CRITERIA: Criterion[]`
+7. Export `const CRITERIA: Map<number, Criterion>` keyed by criterion ID (enforces uniqueness, O(1) lookup during merge/dedup)
 
 **Deterministic criteria IDs** (from CSV analysis):
 - Adult L1: id=1 (GCS<12), id=3 (SBP<90), id=4 (RR<10), id=5 (RR>29)
@@ -211,14 +211,14 @@ Parsing logic:
 #### Core Functions
 
 ```typescript
-function filterCriteriaByAge(criteria: Criterion[], age: number): Criterion[]
+function filterCriteriaByAge(criteria: Map<number, Criterion>, age: number): Criterion[]
 ```
 - Returns criteria where `age >= criterion.ageMin AND (criterion.ageMax === null OR age <= criterion.ageMax)`
 
 ```typescript
 function evaluateDeterministic(
   fields: ExtractedFields,
-  criteria: Criterion[]
+  criteria: Map<number, Criterion>
 ): { matches: CriterionMatch[]; hybridPending: HybridPending[] }
 ```
 1. Filter criteria by age
@@ -529,7 +529,7 @@ Register in `@theme inline` for Tailwind utility classes:
 
 #### `src/lib/server/criteria/criteria.spec.ts`
 
-- All 138 rows parse without errors
+- All 137 rows parse without errors
 - Age ranges correctly parsed (spot-check Adult, Pediatric, Geriatric)
 - Geriatric criteria have `ageMax === null`
 - Pediatric SBP criteria have narrow age ranges (e.g., id=50 has ageMin=3, ageMax=3)
@@ -592,7 +592,7 @@ Build in this sequence to maintain testability at each step:
 Create all TypeScript types in `src/lib/types/`. These are the foundation everything else depends on.
 
 ### Step 2: CSV Parsing + Tests
-Implement `src/lib/server/criteria/criteria.ts`. Write and run tests. Validate all 138 criteria load correctly with proper classification.
+Implement `src/lib/server/criteria/criteria.ts`. Write and run tests. Validate all 137 criteria load correctly with proper classification.
 
 ### Step 3: Deterministic Engine + Tests
 Implement `src/lib/server/engine/deterministic.ts` and `merge.ts`. Write comprehensive unit tests. This is the most critical and most testable module.
@@ -646,7 +646,7 @@ Replace `src/routes/+page.svelte` with the full composition of all components wi
 
 ## Key Design Decisions
 
-1. **CSV parsed at module load, not build time**: Using Vite's `?raw` import. The 138-row CSV is trivially small. Parsed once on first import.
+1. **CSV embedded at build time via Vite `?raw` import**: File content is inlined into the server bundle during build, then parsed into typed `Criterion` objects on first module initialization. No runtime file system reads.
 
 2. **Class-based state with `$state` runes**: Idiomatic Svelte 5. Co-locates state and methods. Fully reactive when properties are read in `.svelte` files.
 

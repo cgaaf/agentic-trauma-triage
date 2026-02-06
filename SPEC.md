@@ -31,7 +31,10 @@ When multiple activation levels are triggered, the highest level wins. If no cri
 - **Server**: SvelteKit server routes (`+server.ts`) — API keys stay server-side
 - **Streaming**: Server-Sent Events (SSE) for real-time result delivery
 - **API Key**: `ANTHROPIC_API_KEY` environment variable
+- **Data**: `trauma-criteria.csv` loaded at build time via Vite `?raw` import (CSV content is inlined into the server bundle; no runtime file reads)
 - **Package Manager**: pnpm
+
+See `IMPLEMENTATION.md` for the complete file structure, component hierarchy, and implementation order.
 
 ### High-Level Data Flow
 
@@ -110,7 +113,7 @@ Runs immediately after extraction completes. Evaluates all numeric vital-sign cr
 **Criteria evaluated deterministically:**
 - GCS thresholds (< 12, == 12 or 13)
 - SBP thresholds (varies by age — Adult < 90, Geriatric < 110, Pediatric age-specific from 70-90 mmHg)
-- RR thresholds (< 10, > 29)
+- RR thresholds (< 10, > 29) — adult only (IDs 4, 5); no RR criteria exist for pediatric or geriatric patients
 
 **Hybrid criteria (numeric + qualitative):**
 - Adult: HR > 100 AND poor perfusion (id 2)
@@ -124,7 +127,7 @@ Runs in parallel with the deterministic engine. Uses Claude Sonnet 4.5 with `too
 **Input to the LLM:**
 - The extracted fields from Phase 1
 - A pre-filtered subset of criteria: only age-appropriate, LLM-only criteria (mechanism, injury, burn, etc.)
-- Any hybrid criteria needing qualitative confirmation from Phase 2a
+- All hybrid criteria (the full criterion definitions, not results from Phase 2a — since 2a and 2b run in parallel, 2b independently evaluates the qualitative conditions such as "Is there poor perfusion?")
 
 **Output format**: Structured JSON via `tool_use` containing:
 - List of matched criteria with `criterion_id`, `confidence` (0-1), and `trigger_reason`
@@ -188,14 +191,105 @@ Criteria are classified by evaluation method:
 
 ### Summary
 
-- **138 total criteria** across 3 categories and 3 activation levels
-- ~8 deterministic criteria (vital sign thresholds)
-- ~3 hybrid criteria (vital sign + qualitative)
-- ~127 LLM-only criteria (mechanism, injury, burn, procedural)
+- **137 total criteria** across 3 categories and 3 activation levels
+- **20 deterministic criteria** (vital sign thresholds: GCS, SBP, RR)
+- **2 hybrid criteria** (HR + qualitative perfusion assessment)
+- **115 LLM-only criteria** (mechanism, injury, burn, procedural)
+
+Classification principle: deterministic and hybrid criteria use the structured vital sign fields extracted in Phase 1 (GCS, SBP, HR, RR). Criteria with other numeric values in their description (fall height, vehicle speed, TBSA%) are LLM-only because those values are not extracted as structured fields.
+
+### Criteria Classification Map
+
+Classification is based on whether a criterion can be evaluated using the structured vital sign fields extracted in Phase 1 (age, GCS, SBP, HR, RR). Criteria with other numeric values (fall height, vehicle speed, TBSA%) are LLM-only because those values are not extracted as structured fields.
+
+#### Deterministic Criteria (20 total)
+
+| ID | Category | Rule | Notes |
+|---|---|---|---|
+| 1 | Adult L1 | GCS < 12 | |
+| 3 | Adult L1 | SBP < 90 | |
+| 4 | Adult L1 | RR < 10 | Adult only |
+| 5 | Adult L1 | RR > 29 | Adult only |
+| 26 | Adult L2 | GCS == 12 or 13 | |
+| 46 | Pediatric L1 | GCS < 12 | |
+| 48 | Pediatric L1 | SBP < 70 | age 0-1 |
+| 49 | Pediatric L1 | SBP < 74 | age 2 |
+| 50 | Pediatric L1 | SBP < 76 | age 3 |
+| 51 | Pediatric L1 | SBP < 78 | age 4 |
+| 52 | Pediatric L1 | SBP < 80 | age 5 |
+| 53 | Pediatric L1 | SBP < 82 | age 6 |
+| 54 | Pediatric L1 | SBP < 84 | age 7 |
+| 55 | Pediatric L1 | SBP < 86 | age 8 |
+| 56 | Pediatric L1 | SBP < 88 | age 9 |
+| 57 | Pediatric L1 | SBP <= 90 | age 10-15 |
+| 78 | Pediatric L2 | GCS == 12 or 13 | |
+| 99 | Geriatric L1 | GCS < 12 | |
+| 101 | Geriatric L1 | SBP < 110 | |
+| 123 | Geriatric L2 | GCS == 12 or 13 | |
+
+#### Hybrid Criteria (2 total)
+
+| ID | Category | Numeric Rule | Qualitative Condition |
+|---|---|---|---|
+| 2 | Adult L1 | HR > 100 | AND poor perfusion |
+| 100 | Geriatric L1 | HR > 90 | AND poor perfusion |
+
+Note: Pediatric tachycardia (ID 47) is classified as **LLM-only** because "associated tachycardia" lacks a specific numeric HR threshold in the CSV (pediatric tachycardia thresholds vary by age).
+
+#### LLM-Only Criteria (115 total)
+
+All remaining criteria. Includes mechanism of injury, anatomical injuries, burns, procedural criteria, and criteria with non-vital-sign numeric values (fall height, vehicle speed, TBSA percentage).
 
 ---
 
-## 5. Input
+## 5. API Contract
+
+### Endpoint
+
+`POST /api/triage`
+
+### Request
+
+Content-Type: `application/json`
+
+```json
+{ "report": "string" }
+```
+
+The `report` field contains the free-text EMS narrative.
+
+### Response
+
+Content-Type: `text/event-stream`
+
+The server responds with a Server-Sent Events stream. Each event has a `type` field that the client uses to update the UI progressively.
+
+### SSE Event Types
+
+| Event Type | Payload | When Sent |
+|---|---|---|
+| `phase` | `{ phase: 'extracting' \| 'evaluating_vitals' \| 'analyzing_mechanism' \| 'complete' }` | At each pipeline stage transition |
+| `extraction` | `{ data: ExtractedFields, warnings: PlausibilityWarning[] }` | After Phase 1 completes |
+| `deterministic` | `{ matches: CriterionMatch[] }` | After Phase 2a completes |
+| `llm_evaluation` | `{ matches: CriterionMatch[], reasoning: string }` | After Phase 2b completes |
+| `result` | `{ data: EvaluationResult }` | After Phase 3 merge |
+| `error` | `{ message: string, phase: string, canRetry: boolean }` | On any pipeline failure |
+
+### SSE Wire Format
+
+Standard SSE format. Each event is:
+
+```
+data: {"type":"<event_type>",...}\n\n
+```
+
+### Error Behavior
+
+If the LLM fails after deterministic results are available, the `error` event includes `canRetry: true` and previously-sent deterministic results remain valid on the client.
+
+---
+
+## 6. Input
 
 ### Interface
 
@@ -227,7 +321,7 @@ No pre-built example reports or templates. The helper text provides sufficient g
 
 ---
 
-## 6. Output
+## 7. Output
 
 ### Phased Reveal
 
@@ -306,7 +400,7 @@ Minimal footer text: *"This is a decision-support tool. Clinical judgment should
 
 ---
 
-## 7. UI/UX
+## 8. UI/UX
 
 ### Layout
 
@@ -361,7 +455,7 @@ Basic semantic HTML for the MVP. No WCAG AA compliance requirement yet.
 
 ---
 
-## 8. Error Handling
+## 9. Error Handling
 
 ### LLM Failure
 
@@ -381,7 +475,7 @@ Out-of-range values generate visual warnings but do NOT block evaluation. The va
 
 ---
 
-## 9. Mock Mode
+## 10. Mock Mode
 
 ### Activation
 
@@ -401,7 +495,7 @@ A purple "MOCK MODE" badge in the header when mock mode is active. Prevents conf
 
 ---
 
-## 10. MVP Scope
+## 11. MVP Scope
 
 ### Included in MVP
 
@@ -423,7 +517,77 @@ A purple "MOCK MODE" badge in the header when mock mode is active. Prevents conf
 
 ---
 
-## 11. Future Phases
+## 12. Key Types
+
+### Criterion (parsed CSV row)
+
+The CSV is loaded at build time via Vite `?raw` import (CSV content is inlined into the server bundle) and parsed into a `Map<number, Criterion>` keyed by criterion ID. This enforces uniqueness and provides O(1) lookup by ID (used during merge/dedup and hybrid confirmation).
+
+```
+id: number
+description: string
+activationLevel: 'Level 1' | 'Level 2' | 'Level 3'
+category: 'Adult' | 'Pediatric' | 'Geriatric'
+ageRangeLabel: string
+ageMin: number
+ageMax: number | null           // null = open-ended (geriatric)
+evaluationMethod: 'deterministic' | 'hybrid' | 'llm'
+vitalRule?: VitalRule           // Only present for deterministic/hybrid criteria
+```
+
+### VitalRule (numeric comparison for deterministic/hybrid criteria)
+
+```
+field: 'gcs' | 'sbp' | 'rr' | 'hr'
+operator: '<' | '<=' | '>' | '>=' | '==' | 'range'
+threshold: number
+thresholdHigh?: number          // For range checks (e.g., GCS 12 or 13)
+requiresLlmConfirmation?: string // Qualitative condition for hybrid (e.g., "poor perfusion")
+```
+
+The `evaluationMethod` and `vitalRule` are derived during CSV parsing by pattern-matching the description text (e.g., "GCS < 12" → deterministic, "HR > 100 AND poor perfusion" → hybrid). The classification map in Section 4 is the authoritative reference for which IDs get which classification.
+
+### ExtractedFields (Phase 1 output)
+
+```
+age: number | null
+sbp: number | null
+hr: number | null
+rr: number | null
+gcs: number | null
+airwayStatus: string | null
+breathingStatus: string | null
+mechanism: string | null
+injuries: string[] | null
+additionalContext: string | null
+```
+
+### CriterionMatch (Phase 2 output)
+
+```
+criterionId: number
+description: string
+activationLevel: 'Level 1' | 'Level 2' | 'Level 3'
+source: 'deterministic' | 'llm'
+confidence?: number             // 0-1, LLM-sourced only
+triggerReason: string           // e.g., "GCS = 8 < 12"
+```
+
+### EvaluationResult (Phase 3 output / final result)
+
+```
+extractedFields: ExtractedFields
+plausibilityWarnings: PlausibilityWarning[]
+criteriaMatches: CriterionMatch[]
+activationLevel: 'Level 1' | 'Level 2' | 'Level 3' | 'Standard Triage'
+justification: string
+agentReasoning: string
+missingFieldWarnings: string[]
+```
+
+---
+
+## 13. Future Phases
 
 ### Phase 2: History & Re-evaluate
 
