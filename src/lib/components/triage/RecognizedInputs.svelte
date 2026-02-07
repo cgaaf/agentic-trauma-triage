@@ -74,6 +74,7 @@
 	</div>
 {/snippet}
 
+<Tooltip.Provider>
 <div class="space-y-3">
 	<h3 class="text-sm font-semibold">Recognized Inputs</h3>
 
@@ -124,3 +125,4 @@
 		{/each}
 	</div>
 </div>
+</Tooltip.Provider>
