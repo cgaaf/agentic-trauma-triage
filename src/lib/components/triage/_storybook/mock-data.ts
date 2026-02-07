@@ -193,3 +193,101 @@ Vitals on scene: BP 88/62, HR 125, RR 28, GCS 12 (E3V4M5). SpO2 92% on 15L NRB.
 Airway patent, maintained with jaw thrust. Decreased breath sounds on left with paradoxical chest wall movement consistent with flail segment. Left femur angulated and shortened. Large scalp laceration with active bleeding controlled with pressure dressing.
 
 IV access x2 established, 500mL NS bolus initiated. C-collar applied, boarded. ETA 8 minutes.`;
+
+// ─── Composite Story Scenario Data ──────────────────────────────────
+
+export const geriatricFields: ExtractedFields = {
+	age: 72,
+	sbp: 102,
+	hr: 98,
+	rr: 18,
+	gcs: 14,
+	airwayStatus: 'Intact',
+	breathingStatus: 'Normal rate, clear bilaterally',
+	mechanism: 'Ground-level fall from standing',
+	injuries: ['Right hip pain and deformity', 'Occipital scalp hematoma'],
+	additionalContext: 'Patient on warfarin for atrial fibrillation, INR last checked at 2.8',
+};
+
+export const pediatricFields: ExtractedFields = {
+	age: 8,
+	sbp: 84,
+	hr: 145,
+	rr: 32,
+	gcs: 10,
+	airwayStatus: 'Patent, crying',
+	breathingStatus: 'Tachypneic, splinting on left',
+	mechanism: 'Bicycle vs. automobile, child struck at approximately 30 mph',
+	injuries: ['Left femur deformity', 'Abdominal guarding', 'Left forearm swelling'],
+	additionalContext: 'Helmeted, found 10 feet from bicycle',
+};
+
+export const standardTriageFields: ExtractedFields = {
+	age: 28,
+	sbp: 122,
+	hr: 82,
+	rr: 16,
+	gcs: 15,
+	airwayStatus: 'Patent',
+	breathingStatus: 'Normal, clear bilaterally',
+	mechanism: 'Tripped on curb, fell onto outstretched hand',
+	injuries: ['3 cm laceration to right forearm'],
+	additionalContext: 'No LOC, ambulatory on scene',
+};
+
+export const geriatricLevel2Match: CriterionMatch = {
+	criterionId: 105,
+	description: 'Hip fracture in patient ≥65 years',
+	activationLevel: 'Level 2',
+	category: 'Geriatric',
+	ageRangeLabel: '≥65 years',
+	source: 'llm',
+	confidence: 0.91,
+	triggerReason: 'Right hip pain with deformity in 72-year-old patient',
+};
+
+export const geriatricLevel3Anticoag: CriterionMatch = {
+	criterionId: 110,
+	description: 'Ground-level fall in patient ≥65 years on anticoagulants',
+	activationLevel: 'Level 3',
+	category: 'Geriatric',
+	ageRangeLabel: '≥65 years',
+	source: 'llm',
+	confidence: 0.95,
+	triggerReason: 'Patient is 72 years old, on warfarin (INR 2.8), ground-level fall with head strike',
+};
+
+export const geriatricReport = `EMS Report: 72-year-old female, ground-level fall from standing at home. Patient tripped on rug and fell, striking head on hardwood floor.
+
+Vitals on scene: BP 102/68, HR 98, RR 18, GCS 14 (E4V4M6). SpO2 97% on RA.
+
+Right hip pain with external rotation and shortening. Occipital scalp hematoma, no active bleeding. Patient on warfarin for AFib, last INR 2.8 per family.
+
+C-collar applied as precaution. IV access established. ETA 12 minutes.`;
+
+export const pediatricReport = `EMS Report: 8-year-old male, bicycle vs. automobile collision on residential street. Child was riding bicycle and struck by sedan traveling approximately 30 mph.
+
+Vitals on scene: BP 84/56, HR 145, RR 32, GCS 10 (E3V3M4). SpO2 94% on NRB.
+
+Helmeted. Left femur angulated mid-shaft. Abdomen distended with guarding in LUQ. Left forearm swollen, neurovascularly intact distally. Found approximately 10 feet from bicycle.
+
+IV access x1 established, 20mL/kg NS bolus initiated. C-collar applied, boarded. ETA 6 minutes.`;
+
+export const standardTriageReport = `EMS Report: 28-year-old male, tripped on curb while walking and fell onto outstretched right hand. No LOC, ambulatory on scene.
+
+Vitals: BP 122/78, HR 82, RR 16, GCS 15. SpO2 99% on RA.
+
+3 cm laceration to right volar forearm, controlled with direct pressure. No neurovascular deficit. No other injuries identified. Patient ambulating without difficulty.
+
+Wound dressed. ETA 15 minutes to ED, non-emergent transport.`;
+
+export const pediatricJustification =
+	'Patient meets Level 1 trauma activation criteria: pediatric patient (8 years) with GCS ≤ 12, hypotension for age (SBP 84), and high-energy mechanism (bicycle vs. automobile). Immediate pediatric trauma team activation recommended.';
+
+export const geriatricJustification =
+	'Patient meets Level 2 trauma activation criteria: geriatric patient (72 years) with hip fracture and anticoagulant use. Head strike on warfarin requires close monitoring. Priority trauma team response with geriatric consultation recommended.';
+
+export const sampleMissingFieldWarnings: string[] = [
+	'Respiratory rate (RR) could not be extracted — vital sign threshold criteria may be incomplete',
+	'GCS score could not be extracted — neurological criteria may be incomplete',
+];
