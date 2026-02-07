@@ -1,9 +1,14 @@
 import type { Preview } from '@storybook/sveltekit';
+import { withThemeByClassName } from '@storybook/addon-themes';
 import '../src/routes/layout.css';
-import ModeWatcherDecorator from './ModeWatcherDecorator.svelte';
 
 const preview: Preview = {
-  decorators: [() => ModeWatcherDecorator],
+  decorators: [
+    withThemeByClassName({
+      themes: { light: '', dark: 'dark' },
+      defaultTheme: 'light',
+    }),
+  ],
   parameters: {
     controls: {
       matchers: {
