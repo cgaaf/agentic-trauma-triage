@@ -13,6 +13,20 @@
 		component: RecognizedInputs,
 		tags: ['autodocs'],
 	});
+
+	/** All vitals missing but clinical fields populated */
+	const allVitalsMissing = {
+		age: null,
+		sbp: null,
+		hr: null,
+		rr: null,
+		gcs: null,
+		airwayStatus: 'Patent, maintained with jaw thrust',
+		breathingStatus: 'Tachypneic, decreased breath sounds on left',
+		mechanism: 'High-speed MVC with rollover, unrestrained driver',
+		injuries: ['Left femur fracture', 'Left-sided flail chest', 'Scalp laceration'],
+		additionalContext: null,
+	};
 </script>
 
 <Story name="AllFieldsPresent" args={{ fields: allFieldsPresent, warnings: [] }} />
@@ -32,3 +46,5 @@
 		warnings: sampleWarnings,
 	}}
 />
+
+<Story name="AllVitalsMissing" args={{ fields: allVitalsMissing, warnings: [] }} />
