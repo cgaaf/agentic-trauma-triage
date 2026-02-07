@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slide } from 'svelte/transition';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { ChevronDown } from '@lucide/svelte';
@@ -80,16 +81,18 @@
 					<div class="px-3 py-2">
 						<p class="text-sm font-medium">{match.description}</p>
 						{#if expanded}
-							<p class="mt-1 text-xs text-muted-foreground">{match.triggerReason}</p>
-							<div class="mt-1.5 flex items-center gap-1.5">
-								{#if match.confidence !== undefined}
-									<Badge variant="outline" class="text-xs">
-										{Math.round(match.confidence * 100)}%
+							<div transition:slide={{ duration: 150 }}>
+								<p class="mt-1 text-xs text-muted-foreground">{match.triggerReason}</p>
+								<div class="mt-1.5 flex items-center gap-1.5">
+									{#if match.confidence !== undefined}
+										<Badge variant="outline" class="text-xs">
+											{Math.round(match.confidence * 100)}%
+										</Badge>
+									{/if}
+									<Badge variant="secondary" class="text-xs">
+										{match.source}
 									</Badge>
-								{/if}
-								<Badge variant="secondary" class="text-xs">
-									{match.source}
-								</Badge>
+								</div>
 							</div>
 						{/if}
 					</div>
@@ -100,7 +103,7 @@
 
 	<!-- Expandable justification / reasoning -->
 	{#if expanded && (justification || agentReasoning)}
-		<div class="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground whitespace-pre-wrap space-y-3">
+		<div transition:slide={{ duration: 150 }} class="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground whitespace-pre-wrap space-y-3">
 			{#if justification}
 				<div>
 					<p class="font-medium text-foreground/70 mb-1">Justification</p>
