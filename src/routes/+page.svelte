@@ -6,7 +6,6 @@
 	import RecognizedInputs from '$lib/components/triage/RecognizedInputs.svelte';
 	import CriteriaMatches from '$lib/components/triage/CriteriaMatches.svelte';
 	import ActivationCard from '$lib/components/triage/ActivationCard.svelte';
-	import AgentReasoning from '$lib/components/triage/AgentReasoning.svelte';
 	import DisclaimerFooter from '$lib/components/triage/DisclaimerFooter.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '$lib/components/ui/alert/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -87,22 +86,23 @@
 
 		<!-- Activation Level Card -->
 		{#if triageState.activationLevel}
+			{@const levelMatches = triageState.allMatches.filter(m => m.activationLevel === triageState.activationLevel)}
 			<ActivationCard
 				level={triageState.activationLevel}
+				matches={levelMatches}
 				justification={triageState.justification}
+				agentReasoning={triageState.agentReasoning}
 			/>
 		{/if}
 
-		<!-- Criteria Matches -->
+		<!-- Criteria Matches (other levels only) -->
 		{#if triageState.allMatches.length > 0}
-			<CriteriaMatches matches={triageState.allMatches} />
+			{@const otherMatches = triageState.allMatches.filter(m => m.activationLevel !== triageState.activationLevel)}
+			{#if otherMatches.length > 0}
+				<CriteriaMatches matches={otherMatches} />
+			{/if}
 		{:else if triageState.deterministicMatches.length > 0}
 			<CriteriaMatches matches={triageState.deterministicMatches} />
-		{/if}
-
-		<!-- Agent Reasoning -->
-		{#if triageState.agentReasoning}
-			<AgentReasoning reasoning={triageState.agentReasoning} />
 		{/if}
 
 		<!-- Disclaimer -->

@@ -1,5 +1,6 @@
 <script module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
+	import { userEvent } from 'storybook/test';
 	import CriteriaMatches from './CriteriaMatches.svelte';
 	import {
 		singleLevel1Matches,
@@ -24,3 +25,14 @@
 <Story name="PediatricMatches" args={{ matches: pediatricMatches }} />
 
 <Story name="EmptyMatches" args={{ matches: [] }} />
+
+<Story
+	name="MixedLevelsExpanded"
+	args={{ matches: mixedLevelMatches }}
+	play={async ({ canvasElement }) => {
+		const buttons = canvasElement.querySelectorAll('button');
+		for (const button of buttons) {
+			await userEvent.click(button);
+		}
+	}}
+/>

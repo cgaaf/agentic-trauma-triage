@@ -1,8 +1,12 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { ChevronDown } from '@lucide/svelte';
 	import type { CriterionMatch, ActivationLevel, Category } from '$lib/types/index.js';
 
 	let { matches }: { matches: CriterionMatch[] } = $props();
+
+	let expandedLevels: Record<string, boolean> = $state({});
 
 	const levelColors: Record<string, string> = {
 		'Level 1': 'text-red-700 dark:text-red-400',
@@ -39,41 +43,67 @@
 
 		return grouped;
 	}
+
+	function countLevelMatches(categories: Map<string, CriterionMatch[]>): number {
+		let count = 0;
+		for (const arr of categories.values()) count += arr.length;
+		return count;
+	}
 </script>
 
 {#if matches.length > 0}
 	{@const grouped = groupMatches(matches)}
 	<div class="space-y-4">
 		<h3 class="text-sm font-semibold">Matched Criteria</h3>
-		{#each [...grouped] as [level, categories]}
-			<div class="rounded-lg border {levelBg[level]} p-3">
-				<h4 class="text-lg font-bold tracking-wide {levelColors[level]}">
-					{level.toUpperCase()}
-				</h4>
-				{#each [...categories] as [categoryLabel, categoryMatches]}
-					<div class="mt-2">
+		{#each [...grouped] as [level, categories] (level)}
+			{@const matchCount = countLevelMatches(categories)}
+			<div class="rounded-lg border {levelBg[level]} p-3 space-y-2">
+				<div class="flex items-start justify-between gap-2">
+					<h4 class="text-lg font-bold tracking-wide {levelColors[level]}">
+						{level.toUpperCase()}
+					</h4>
+					<span class="text-xs text-muted-foreground mt-1">
+						{matchCount} {matchCount === 1 ? 'criterion' : 'criteria'}
+					</span>
+				</div>
+				{#each [...categories] as [categoryLabel, categoryMatches] (categoryLabel)}
+					<div>
 						<p class="text-xs font-medium text-muted-foreground">{categoryLabel}</p>
-						<ul class="mt-1 space-y-1.5">
-							{#each categoryMatches as match}
-								<li class="flex flex-wrap items-start gap-2 text-sm">
-									<span class="shrink-0">&#8226;</span>
-									<div class="min-w-0 flex-1">
-										<span class="font-medium">{match.description}</span>
-										<span class="text-muted-foreground"> — {match.triggerReason}</span>
-										{#if match.confidence !== undefined}
-											<Badge variant="outline" class="ml-1.5 text-xs">
-												{Math.round(match.confidence * 100)}%
-											</Badge>
+						<div class="mt-1 rounded-md border bg-background/50 overflow-hidden">
+							<div class="divide-y divide-dashed divide-border">
+								{#each categoryMatches as match (match.criterionId)}
+									<div class="px-3 py-2">
+										<p class="text-sm font-medium">{match.description}</p>
+										{#if expandedLevels[level]}
+											<p class="mt-1 text-xs text-muted-foreground">{match.triggerReason}</p>
+											<div class="mt-1.5 flex items-center gap-1.5">
+												{#if match.confidence !== undefined}
+													<Badge variant="outline" class="text-xs">
+														{Math.round(match.confidence * 100)}%
+													</Badge>
+												{/if}
+												<Badge variant="secondary" class="text-xs">
+													{match.source}
+												</Badge>
+											</div>
 										{/if}
-										<Badge variant="secondary" class="ml-1 text-xs">
-											{match.source}
-										</Badge>
 									</div>
-								</li>
-							{/each}
-						</ul>
+								{/each}
+							</div>
+						</div>
 					</div>
 				{/each}
+				<div>
+					<Button
+						variant="ghost"
+						size="sm"
+						class="h-7 gap-1.5 text-xs text-muted-foreground"
+						onclick={() => (expandedLevels[level] = !expandedLevels[level])}
+					>
+						<ChevronDown class="size-3.5 transition-transform {expandedLevels[level] ? 'rotate-180' : ''}" />
+						{expandedLevels[level] ? 'Hide' : 'Show'} details
+					</Button>
+				</div>
 			</div>
 		{/each}
 	</div>
