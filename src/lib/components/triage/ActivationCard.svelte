@@ -16,8 +16,7 @@
 		agentReasoning?: string;
 	} = $props();
 
-	let detailsOpen = $state(false);
-	let criteriaDetailsOpen = $state(false);
+	let expanded = $state(false);
 
 	const colors: Record<
 		FinalActivationLevel,
@@ -80,7 +79,7 @@
 				{#each matches as match (match.criterionId)}
 					<div class="px-3 py-2">
 						<p class="text-sm font-medium">{match.description}</p>
-						{#if criteriaDetailsOpen}
+						{#if expanded}
 							<p class="mt-1 text-xs text-muted-foreground">{match.triggerReason}</p>
 							<div class="mt-1.5 flex items-center gap-1.5">
 								{#if match.confidence !== undefined}
@@ -96,48 +95,37 @@
 					</div>
 				{/each}
 			</div>
-			<div class="border-t px-3 py-1.5">
-				<Button
-					variant="ghost"
-					size="sm"
-					class="h-7 gap-1.5 text-xs text-muted-foreground"
-					onclick={() => (criteriaDetailsOpen = !criteriaDetailsOpen)}
-				>
-					<ChevronDown class="size-3.5 transition-transform {criteriaDetailsOpen ? 'rotate-180' : ''}" />
-					{criteriaDetailsOpen ? 'Hide' : 'Show'} details
-				</Button>
 			</div>
-		</div>
 	{/if}
 
 	<!-- Expandable justification / reasoning -->
-	{#if justification || agentReasoning}
-		<div>
-			<Button
-				variant="ghost"
-				size="sm"
-				class="gap-1.5 text-muted-foreground"
-				onclick={() => (detailsOpen = !detailsOpen)}
-			>
-				<ChevronDown class="size-4 transition-transform {detailsOpen ? 'rotate-180' : ''}" />
-				Justification &amp; Reasoning
-			</Button>
-			{#if detailsOpen}
-				<div class="mt-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground whitespace-pre-wrap space-y-3">
-					{#if justification}
-						<div>
-							<p class="font-medium text-foreground/70 mb-1">Justification</p>
-							<p>{justification}</p>
-						</div>
-					{/if}
-					{#if agentReasoning}
-						<div>
-							<p class="font-medium text-foreground/70 mb-1">Agent Reasoning</p>
-							<p>{agentReasoning}</p>
-						</div>
-					{/if}
+	{#if expanded && (justification || agentReasoning)}
+		<div class="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground whitespace-pre-wrap space-y-3">
+			{#if justification}
+				<div>
+					<p class="font-medium text-foreground/70 mb-1">Justification</p>
+					<p>{justification}</p>
+				</div>
+			{/if}
+			{#if agentReasoning}
+				<div>
+					<p class="font-medium text-foreground/70 mb-1">Agent Reasoning</p>
+					<p>{agentReasoning}</p>
 				</div>
 			{/if}
 		</div>
 	{/if}
+
+	<!-- Single expand/collapse toggle -->
+	<div class="flex justify-center">
+		<Button
+			variant="ghost"
+			size="sm"
+			class="h-7 gap-1.5 text-xs text-muted-foreground"
+			onclick={() => (expanded = !expanded)}
+		>
+			<ChevronDown class="size-3.5 transition-transform {expanded ? 'rotate-180' : ''}" />
+			{expanded ? 'Hide' : 'Show'} details
+		</Button>
+	</div>
 </div>

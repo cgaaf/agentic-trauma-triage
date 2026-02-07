@@ -93,7 +93,7 @@
 						</div>
 					</div>
 				{/each}
-				<div>
+				<div class="flex justify-center">
 					<Button
 						variant="ghost"
 						size="sm"
