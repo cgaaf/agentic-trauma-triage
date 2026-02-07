@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Check, AlertTriangle } from '@lucide/svelte';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import type { ExtractedFields, PlausibilityWarning } from '$lib/types/index.js';
 
 	let {
@@ -74,7 +73,6 @@
 	</div>
 {/snippet}
 
-<Tooltip.Provider>
 <div class="space-y-3">
 	<h3 class="text-sm font-semibold">Recognized Inputs</h3>
 
@@ -83,24 +81,22 @@
 		{#each vitalDefs as { key, label, unit } (key)}
 			{@const value = fields[key as keyof ExtractedFields]}
 			{@const state = getChipState(key, value)}
-			{@const warning = getWarning(key)}
-			{#if state === 'warning' && warning}
-				<Tooltip.Root>
-					<Tooltip.Trigger class="cursor-default">
-						{@render chipBody(label, value, unit, state)}
-					</Tooltip.Trigger>
-					<Tooltip.Content side="bottom" class="max-w-64">
-						<p class="flex items-center gap-1.5">
-							<AlertTriangle class="size-3.5 shrink-0 text-amber-400" />
-							{warning.message}
-						</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
-			{:else}
-				{@render chipBody(label, value, unit, state)}
-			{/if}
+			{@render chipBody(label, value, unit, state)}
 		{/each}
 	</div>
+
+	{#if warnings.length > 0}
+		<div class="space-y-1">
+			{#each warnings as warning (warning.field)}
+				<div class="flex items-start gap-1.5">
+					<AlertTriangle class="mt-0.5 size-3.5 shrink-0 text-amber-500" />
+					<p class="text-sm text-amber-700 dark:text-amber-400">
+						{warning.message}
+					</p>
+				</div>
+			{/each}
+		</div>
+	{/if}
 
 	<!-- Zone 2: Clinical Details -->
 	<div class="space-y-1">
@@ -125,4 +121,3 @@
 		{/each}
 	</div>
 </div>
-</Tooltip.Provider>
