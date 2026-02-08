@@ -16,6 +16,7 @@
 
 	let { data } = $props();
 	let reportValue = $state('');
+	let reportExpanded = $state(false);
 	let showProgressSteps = $state(true);
 
 	$effect(() => {
@@ -29,7 +30,14 @@
 		}
 	});
 
+	$effect(() => {
+		if (triageState.activationLevel) {
+			reportExpanded = false;
+		}
+	});
+
 	function handleSubmit(report: string) {
+		reportExpanded = true;
 		triageState.submitReport(report);
 	}
 
@@ -53,11 +61,7 @@
 			: 'space-y-6'}"
 	>
 		<!-- Input Section -->
-		{#if triageState.phase === 'complete'}
-			<div transition:slide={{ duration: 300 }}>
-				<ReportDisplay text={reportValue} />
-			</div>
-		{:else}
+		{#if triageState.phase === 'idle' || triageState.phase === 'error'}
 			<div class={triageState.phase === 'idle' ? 'w-full max-w-2xl' : ''} transition:slide={{ duration: 300 }}>
 				{#if triageState.phase === 'idle'}
 					<h1 class="mb-6 text-center text-3xl font-semibold tracking-tight text-foreground">
@@ -65,6 +69,10 @@
 					</h1>
 				{/if}
 				<ReportInput bind:value={reportValue} loading={triageState.isLoading} onsubmit={handleSubmit} />
+			</div>
+		{:else}
+			<div transition:slide={{ duration: 300 }}>
+				<ReportDisplay text={reportValue} bind:expanded={reportExpanded} />
 			</div>
 		{/if}
 
@@ -120,13 +128,11 @@
 		{/if}
 
 		<!-- Criteria Matches (other levels only) -->
-		{#if triageState.allMatches.length > 0}
+		{#if triageState.activationLevel && triageState.allMatches.length > 0}
 			{@const otherMatches = triageState.allMatches.filter(m => m.activationLevel !== triageState.activationLevel)}
 			{#if otherMatches.length > 0}
 				<AdditionalCriteria matches={otherMatches} />
 			{/if}
-		{:else if triageState.deterministicMatches.length > 0}
-			<AdditionalCriteria matches={triageState.deterministicMatches} />
 		{/if}
 
 		<!-- Disclaimer -->

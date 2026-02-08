@@ -21,3 +21,5 @@
 <Story name="GeriatricReport" args={{ text: geriatricReport }} />
 
 <Story name="StandardTriage" args={{ text: standardTriageReport }} />
+
+<Story name="Expanded" args={{ text: sampleReport, expanded: true }} />

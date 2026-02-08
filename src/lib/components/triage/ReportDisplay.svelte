@@ -2,9 +2,7 @@
 	import { tick } from 'svelte';
 	import { ChevronDown } from '@lucide/svelte';
 
-	let { text }: { text: string } = $props();
-
-	let expanded = $state(false);
+	let { text, expanded = $bindable(false) }: { text: string; expanded?: boolean } = $props();
 	let containerEl: HTMLDivElement | undefined = $state();
 	let animatedHeight = $state<number | null>(null);
 
