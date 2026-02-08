@@ -9,7 +9,7 @@
 		argTypes: {
 			phase: {
 				control: { type: 'select' },
-				options: ['idle', 'extracting', 'evaluating_vitals', 'analyzing_mechanism', 'complete'],
+				options: ['idle', 'extracting', 'evaluating_vitals', 'analyzing_mechanism'],
 			},
 		},
 	});
@@ -20,7 +20,5 @@
 <Story name="EvaluatingVitals" args={{ phase: 'evaluating_vitals' }} />
 
 <Story name="AnalyzingMechanism" args={{ phase: 'analyzing_mechanism' }} />
-
-<Story name="Complete" args={{ phase: 'complete' }} />
 
 <Story name="Idle" args={{ phase: 'idle' }} />

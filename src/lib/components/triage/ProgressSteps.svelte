@@ -8,14 +8,12 @@
 		{ id: 'extracting', label: 'Extracting details...' },
 		{ id: 'evaluating_vitals', label: 'Evaluating vitals...' },
 		{ id: 'analyzing_mechanism', label: 'Analyzing mechanism & injuries...' },
-		{ id: 'complete', label: 'Complete' },
 	] as const;
 
 	const phaseOrder: Record<string, number> = {
 		extracting: 0,
 		evaluating_vitals: 1,
 		analyzing_mechanism: 2,
-		complete: 3,
 	};
 
 	function getStepStatus(stepId: string): 'done' | 'active' | 'pending' {
