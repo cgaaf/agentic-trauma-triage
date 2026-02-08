@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import Header from '$lib/components/triage/Header.svelte';
 	import ReportInput from '$lib/components/triage/ReportInput.svelte';
@@ -18,6 +19,7 @@
 	let reportValue = $state('');
 	let reportExpanded = $state(false);
 	let showProgressSteps = $state(true);
+	let activationCardEl = $state<HTMLDivElement>();
 
 	$effect(() => {
 		const phase = triageState.phase;
@@ -33,6 +35,14 @@
 	$effect(() => {
 		if (triageState.activationLevel) {
 			reportExpanded = false;
+		}
+	});
+
+	$effect(() => {
+		if (triageState.activationLevel) {
+			tick().then(() => {
+				activationCardEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			});
 		}
 	});
 
@@ -126,12 +136,14 @@
 		<!-- Activation Level Card -->
 		{#if triageState.activationLevel}
 			{@const levelMatches = triageState.allMatches.filter(m => m.activationLevel === triageState.activationLevel)}
-			<ActivationCard
-				level={triageState.activationLevel}
-				matches={levelMatches}
-				justification={triageState.justification}
-				agentReasoning={triageState.agentReasoning}
-			/>
+			<div bind:this={activationCardEl} class="scroll-mt-16">
+				<ActivationCard
+					level={triageState.activationLevel}
+					matches={levelMatches}
+					justification={triageState.justification}
+					agentReasoning={triageState.agentReasoning}
+				/>
+			</div>
 		{/if}
 
 		<!-- Criteria Matches (other levels only) -->

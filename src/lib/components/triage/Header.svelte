@@ -15,7 +15,7 @@
 	} = $props();
 </script>
 
-<header class="border-b bg-card px-4 py-3">
+<header class="sticky top-0 z-10 border-b bg-card px-4 py-3">
 	<div class="mx-auto flex max-w-4xl items-center justify-between">
 		<div class="flex items-center gap-3">
 			<h1 class="text-xl font-bold tracking-tight">Trauma Triage Agent</h1>
