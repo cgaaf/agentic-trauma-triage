@@ -31,3 +31,16 @@
 		}
 	}}
 />
+
+<Story name="IdleCentered">
+	{#snippet children()}
+		<div class="flex min-h-[600px] flex-col items-center justify-center">
+			<div class="w-full max-w-2xl">
+				<h1 class="mb-6 text-center text-3xl font-semibold tracking-tight">
+					Enter your report.
+				</h1>
+				<ReportInput value="" loading={false} />
+			</div>
+		</div>
+	{/snippet}
+</Story>

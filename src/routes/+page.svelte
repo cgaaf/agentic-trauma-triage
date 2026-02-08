@@ -1,23 +1,48 @@
 <script lang="ts">
+	import { tick } from 'svelte';
+	import { slide } from 'svelte/transition';
 	import Header from '$lib/components/triage/Header.svelte';
 	import ReportInput from '$lib/components/triage/ReportInput.svelte';
-	import WelcomeView from '$lib/components/triage/WelcomeView.svelte';
+	import ReportDisplay from '$lib/components/triage/ReportDisplay.svelte';
 	import ProgressSteps from '$lib/components/triage/ProgressSteps.svelte';
-	import RecognizedInputs from '$lib/components/triage/RecognizedInputs.svelte';
-	import CriteriaMatches from '$lib/components/triage/CriteriaMatches.svelte';
+	import ExtractedData from '$lib/components/triage/ExtractedData.svelte';
+	import AdditionalCriteria from '$lib/components/triage/AdditionalCriteria.svelte';
 	import ActivationCard from '$lib/components/triage/ActivationCard.svelte';
-	import AgentReasoning from '$lib/components/triage/AgentReasoning.svelte';
 	import DisclaimerFooter from '$lib/components/triage/DisclaimerFooter.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '$lib/components/ui/alert/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
+
 	import { AlertTriangle, RotateCcw } from '@lucide/svelte';
 	import { triageState } from '$lib/state/triage.svelte.js';
 
 	let { data } = $props();
 	let reportValue = $state('');
+	let reportExpanded = $state(false);
+	let showProgressSteps = $state(true);
+	let activationCardEl = $state<HTMLDivElement>();
+
+	$effect(() => {
+		const phase = triageState.phase;
+		if (phase === 'complete') {
+			const timer = setTimeout(() => { showProgressSteps = false; }, 1000);
+			return () => clearTimeout(timer);
+		}
+		if (phase !== 'idle') {
+			showProgressSteps = true;
+		}
+	});
+
+	$effect(() => {
+		if (triageState.activationLevel) {
+			reportExpanded = false;
+			tick().then(() => {
+				activationCardEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			});
+		}
+	});
 
 	function handleSubmit(report: string) {
+		reportExpanded = true;
 		triageState.submitReport(report);
 	}
 
@@ -26,6 +51,13 @@
 			triageState.submitReport(triageState.report);
 		}
 	}
+
+	function handleNewTriage() {
+		triageState.reset();
+		reportValue = '';
+		reportExpanded = false;
+		showProgressSteps = true;
+	}
 </script>
 
 <svelte:head>
@@ -33,22 +65,41 @@
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
-	<Header mockMode={data.mockMode} />
+	<Header mockMode={data.mockMode} showNewTriage={triageState.phase === 'complete'} onNewTriage={handleNewTriage} />
 
-	<main class="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-6">
+	<main
+		class="mx-auto w-full max-w-4xl flex-1 px-4 py-6 {triageState.phase === 'idle'
+			? 'flex flex-col items-center justify-center'
+			: 'space-y-6'}"
+	>
 		<!-- Input Section -->
-		<ReportInput bind:value={reportValue} loading={triageState.isLoading} onsubmit={handleSubmit} />
+		{#if triageState.phase === 'idle' || triageState.phase === 'error'}
+			<div class={triageState.phase === 'idle' ? 'w-full max-w-2xl' : ''} transition:slide={{ duration: 300 }}>
+				{#if triageState.phase === 'idle'}
+					<h1 class="mb-6 text-center text-3xl font-semibold tracking-tight text-foreground">
+						Enter your report.
+					</h1>
+				{/if}
+				<ReportInput bind:value={reportValue} loading={triageState.isLoading} onsubmit={handleSubmit} />
+			</div>
+		{:else}
+			<div transition:slide={{ duration: 300 }}>
+				<ReportDisplay text={reportValue} bind:expanded={reportExpanded} />
+			</div>
+		{/if}
 
-		<Separator />
-
-		<!-- Welcome / Idle State -->
-		{#if triageState.phase === 'idle'}
-			<WelcomeView />
+		{#if triageState.phase !== 'idle'}
+			<div
+				class="h-px w-full"
+				style="background-image: repeating-linear-gradient(90deg, var(--border) 0 6px, transparent 6px 12px)"
+			></div>
 		{/if}
 
 		<!-- Progress Steps -->
-		{#if triageState.phase !== 'idle'}
-			<ProgressSteps phase={triageState.phase} />
+		{#if triageState.phase !== 'idle' && showProgressSteps}
+			<div transition:slide={{ duration: 300 }}>
+				<ProgressSteps phase={triageState.phase} />
+			</div>
 		{/if}
 
 		<!-- Error Display -->
@@ -68,41 +119,34 @@
 			</Alert>
 		{/if}
 
-		<!-- Recognized Inputs -->
+		<!-- Extracted Data -->
 		{#if triageState.extractedFields}
-			<RecognizedInputs
+			<ExtractedData
 				fields={triageState.extractedFields}
 				warnings={triageState.plausibilityWarnings}
+				missingFieldWarnings={triageState.missingFieldWarnings}
 			/>
-		{/if}
-
-		<!-- Missing Field Warnings -->
-		{#if triageState.missingFieldWarnings.length > 0}
-			<div class="space-y-1">
-				{#each triageState.missingFieldWarnings as warning}
-					<p class="text-xs text-amber-600 dark:text-amber-400">{warning}</p>
-				{/each}
-			</div>
 		{/if}
 
 		<!-- Activation Level Card -->
 		{#if triageState.activationLevel}
-			<ActivationCard
-				level={triageState.activationLevel}
-				justification={triageState.justification}
-			/>
+			{@const levelMatches = triageState.allMatches.filter(m => m.activationLevel === triageState.activationLevel)}
+			<div bind:this={activationCardEl} class="scroll-mt-16">
+				<ActivationCard
+					level={triageState.activationLevel}
+					matches={levelMatches}
+					justification={triageState.justification}
+					agentReasoning={triageState.agentReasoning}
+				/>
+			</div>
 		{/if}
 
-		<!-- Criteria Matches -->
-		{#if triageState.allMatches.length > 0}
-			<CriteriaMatches matches={triageState.allMatches} />
-		{:else if triageState.deterministicMatches.length > 0}
-			<CriteriaMatches matches={triageState.deterministicMatches} />
-		{/if}
-
-		<!-- Agent Reasoning -->
-		{#if triageState.agentReasoning}
-			<AgentReasoning reasoning={triageState.agentReasoning} />
+		<!-- Criteria Matches (other levels only) -->
+		{#if triageState.activationLevel && triageState.allMatches.length > 0}
+			{@const otherMatches = triageState.allMatches.filter(m => m.activationLevel !== triageState.activationLevel)}
+			{#if otherMatches.length > 0}
+				<AdditionalCriteria matches={otherMatches} />
+			{/if}
 		{/if}
 
 		<!-- Disclaimer -->
