@@ -60,11 +60,11 @@ Auto-enabled when `ANTHROPIC_API_KEY` is missing or placeholder. Uses regex-base
 
 Three vitest projects configured in `vite.config.ts`:
 
-| Project | Environment | Includes | Purpose |
-|---------|------------|----------|---------|
-| `server` | Node | `*.{test,spec}.ts` (not `.svelte.*`) | Criteria integrity, deterministic engine, merge logic |
-| `client` | Playwright/Chromium | `*.svelte.{test,spec}.ts` | Component tests |
-| `storybook` | Playwright/Chromium | Stories via addon-vitest | Visual/interaction tests |
+| Project     | Environment         | Includes                             | Purpose                                               |
+| ----------- | ------------------- | ------------------------------------ | ----------------------------------------------------- |
+| `server`    | Node                | `*.{test,spec}.ts` (not `.svelte.*`) | Criteria integrity, deterministic engine, merge logic |
+| `client`    | Playwright/Chromium | `*.svelte.{test,spec}.ts`            | Component tests                                       |
+| `storybook` | Playwright/Chromium | Stories via addon-vitest             | Visual/interaction tests                              |
 
 `requireAssertions: true` is enabled globally — every test must contain at least one assertion.
 

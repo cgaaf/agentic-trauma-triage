@@ -1,20 +1,20 @@
-import type { z } from 'zod';
+import type { z } from "zod";
 import type {
-	VitalRuleSchema,
-	CriterionSchema,
-	ExtractedFieldsSchema,
-	PlausibilityWarningSchema,
-	CriterionMatchSchema,
-	EvaluationResultSchema,
-	SSEEventSchema,
-	ActivationLevelSchema,
-	FinalActivationLevelSchema,
-	CategorySchema,
-	EvaluationMethodSchema,
-	MatchSourceSchema,
-	VitalFieldSchema,
-	VitalOperatorSchema,
-} from './schemas.js';
+  VitalRuleSchema,
+  CriterionSchema,
+  ExtractedFieldsSchema,
+  PlausibilityWarningSchema,
+  CriterionMatchSchema,
+  EvaluationResultSchema,
+  SSEEventSchema,
+  ActivationLevelSchema,
+  FinalActivationLevelSchema,
+  CategorySchema,
+  EvaluationMethodSchema,
+  MatchSourceSchema,
+  VitalFieldSchema,
+  VitalOperatorSchema,
+} from "./schemas.js";
 
 export type VitalRule = z.infer<typeof VitalRuleSchema>;
 export type Criterion = z.infer<typeof CriterionSchema>;

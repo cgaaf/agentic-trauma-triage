@@ -8,12 +8,12 @@ The agent processes input in a single-shot flow — the user submits an EMS repo
 
 ### Activation Levels
 
-| Level | Severity | Color |
-|---|---|---|
-| Level 1 | Critical activation | Red |
-| Level 2 | High-priority activation | Orange |
-| Level 3 | Moderate activation | Yellow |
-| Standard Triage | No activation criteria met | Gray |
+| Level           | Severity                   | Color  |
+| --------------- | -------------------------- | ------ |
+| Level 1         | Critical activation        | Red    |
+| Level 2         | High-priority activation   | Orange |
+| Level 3         | Moderate activation        | Yellow |
+| Standard Triage | No activation criteria met | Gray   |
 
 When multiple activation levels are triggered, the highest level wins. If no criteria are met, the default outcome is "Standard Triage."
 
@@ -82,6 +82,7 @@ User submits EMS report
 A single LLM call using Claude Haiku 4.5 with `tool_use` to extract structured fields from the free-text report.
 
 **Extracted Fields:**
+
 - `age` (integer, absolutely required)
 - `sbp` (Systolic Blood Pressure, mmHg)
 - `hr` (Heart Rate, bpm)
@@ -94,6 +95,7 @@ A single LLM call using Claude Haiku 4.5 with `tool_use` to extract structured f
 - `additionalContext` (other relevant clinical context)
 
 **Validation Gates:**
+
 1. **Relevance check**: The extraction step determines if the input is actually a trauma/EMS report. If the user submits something irrelevant (e.g., "order a cheeseburger"), return an error without proceeding to evaluation.
 2. **Age gate**: If age cannot be extracted, return an error. Age is absolutely required — triage is rejected without it.
 
@@ -104,6 +106,7 @@ A single LLM call using Claude Haiku 4.5 with `tool_use` to extract structured f
 Runs immediately after extraction completes. Evaluates all numeric vital-sign criteria deterministically.
 
 **Process:**
+
 1. Filter the criteria database by the patient's age using `age_min` and `age_max` columns (inclusive boundaries, integer ages)
 2. Select only deterministic and hybrid criteria from the filtered set
 3. For each deterministic criterion: compare the extracted vital sign value against the threshold
@@ -111,11 +114,13 @@ Runs immediately after extraction completes. Evaluates all numeric vital-sign cr
 5. Return matched criteria with trigger reasons
 
 **Criteria evaluated deterministically:**
+
 - GCS thresholds (< 12, == 12 or 13)
 - SBP thresholds (varies by age — Adult < 90, Geriatric < 110, Pediatric age-specific from 70-90 mmHg)
 - RR thresholds (< 10, > 29) — adult only (IDs 4, 5); no RR criteria exist for pediatric or geriatric patients
 
 **Hybrid criteria (numeric + qualitative):**
+
 - Adult: HR > 100 AND poor perfusion (id 2)
 - Geriatric: HR > 90 AND poor perfusion (id 100)
 - Pediatric tachycardia (id 47): classified as LLM-only because "associated tachycardia" lacks a specific numeric threshold in the CSV (pediatric tachycardia thresholds vary by age)
@@ -125,11 +130,13 @@ Runs immediately after extraction completes. Evaluates all numeric vital-sign cr
 Runs in parallel with the deterministic engine. Uses Claude Sonnet 4.5 with `tool_use`.
 
 **Input to the LLM:**
+
 - The extracted fields from Phase 1
 - A pre-filtered subset of criteria: only age-appropriate, LLM-only criteria (mechanism, injury, burn, etc.)
 - All hybrid criteria (the full criterion definitions, not results from Phase 2a — since 2a and 2b run in parallel, 2b independently evaluates the qualitative conditions such as "Is there poor perfusion?")
 
 **Output format**: Structured JSON via `tool_use` containing:
+
 - List of matched criteria with `criterion_id`, `confidence` (0-1), and `trigger_reason`
 - Hybrid confirmations (whether qualitative conditions are met)
 - Free-text `reasoning_narrative` explaining the evaluation logic
@@ -139,6 +146,7 @@ Runs in parallel with the deterministic engine. Uses Claude Sonnet 4.5 with `too
 ### Phase 3: Merge
 
 Combines results from both parallel evaluations:
+
 1. Promote hybrid criteria where the LLM confirmed the qualitative part
 2. Combine deterministic + confirmed hybrid + LLM matches
 3. Deduplicate by criterion ID
@@ -153,26 +161,26 @@ Combines results from both parallel evaluations:
 
 Criteria are defined as a typed array in `src/lib/server/criteria/criteria.ts`. Each criterion has the following fields:
 
-| Field | Description |
-|---|---|
-| `id` | Unique criterion identifier |
-| `description` | Human-readable criterion text |
-| `activationLevel` | Level 1, Level 2, or Level 3 |
-| `category` | Adult, Pediatric, or Geriatric |
-| `ageMin` | Minimum age (inclusive) |
-| `ageMax` | Maximum age (inclusive), `null` for geriatric (open-ended) |
-| `evaluationMethod` | How the criterion is evaluated: `deterministic`, `hybrid`, or `llm` |
-| `vitalRule` | (Optional) Numeric comparison rule for deterministic/hybrid criteria |
+| Field              | Description                                                          |
+| ------------------ | -------------------------------------------------------------------- |
+| `id`               | Unique criterion identifier                                          |
+| `description`      | Human-readable criterion text                                        |
+| `activationLevel`  | Level 1, Level 2, or Level 3                                         |
+| `category`         | Adult, Pediatric, or Geriatric                                       |
+| `ageMin`           | Minimum age (inclusive)                                              |
+| `ageMax`           | Maximum age (inclusive), `null` for geriatric (open-ended)           |
+| `evaluationMethod` | How the criterion is evaluated: `deterministic`, `hybrid`, or `llm`  |
+| `vitalRule`        | (Optional) Numeric comparison rule for deterministic/hybrid criteria |
 
 The `trauma-criteria.csv` remains in the repository as the medical team's reference document but is not imported by the application. VitalRules for deterministic and hybrid criteria are defined inline in the TypeScript file — no CSV parsing or natural-language extraction is needed.
 
 ### Age Categories
 
-| Category | General Range | Notes |
-|---|---|---|
-| Adult | 16-64 | L3 criteria start at 18 |
-| Pediatric | 0-15 | L3 criteria extend to 17; SBP thresholds are age-specific |
-| Geriatric | 65+ | Open-ended (no age_max) |
+| Category  | General Range | Notes                                                     |
+| --------- | ------------- | --------------------------------------------------------- |
+| Adult     | 16-64         | L3 criteria start at 18                                   |
+| Pediatric | 0-15          | L3 criteria extend to 17; SBP thresholds are age-specific |
+| Geriatric | 65+           | Open-ended (no age_max)                                   |
 
 ### Age Filtering
 
@@ -186,11 +194,11 @@ The `trauma-criteria.csv` remains in the repository as the medical team's refere
 
 Criteria are classified by their `evaluationMethod` field in the typed criteria array.
 
-| Method | Description | Examples |
-|---|---|---|
-| **Deterministic** | Pure numeric vital sign comparison | GCS < 12, SBP < 90, RR < 10 |
-| **Hybrid** | Numeric check + qualitative condition | HR > 100 AND poor perfusion |
-| **LLM-only** | Requires clinical language interpretation | Penetrating injury to torso, fall > 15 ft, burns > 20% TBSA |
+| Method            | Description                               | Examples                                                    |
+| ----------------- | ----------------------------------------- | ----------------------------------------------------------- |
+| **Deterministic** | Pure numeric vital sign comparison        | GCS < 12, SBP < 90, RR < 10                                 |
+| **Hybrid**        | Numeric check + qualitative condition     | HR > 100 AND poor perfusion                                 |
+| **LLM-only**      | Requires clinical language interpretation | Penetrating injury to torso, fall > 15 ft, burns > 20% TBSA |
 
 ### Summary
 
@@ -207,35 +215,35 @@ This table summarizes the deterministic and hybrid criteria. The typed criteria 
 
 #### Deterministic Criteria (20 total)
 
-| ID | Category | Rule | Notes |
-|---|---|---|---|
-| 1 | Adult L1 | GCS < 12 | |
-| 3 | Adult L1 | SBP < 90 | |
-| 4 | Adult L1 | RR < 10 | Adult only |
-| 5 | Adult L1 | RR > 29 | Adult only |
-| 26 | Adult L2 | GCS == 12 or 13 | |
-| 46 | Pediatric L1 | GCS < 12 | |
-| 48 | Pediatric L1 | SBP < 70 | age 0-1 |
-| 49 | Pediatric L1 | SBP < 74 | age 2 |
-| 50 | Pediatric L1 | SBP < 76 | age 3 |
-| 51 | Pediatric L1 | SBP < 78 | age 4 |
-| 52 | Pediatric L1 | SBP < 80 | age 5 |
-| 53 | Pediatric L1 | SBP < 82 | age 6 |
-| 54 | Pediatric L1 | SBP < 84 | age 7 |
-| 55 | Pediatric L1 | SBP < 86 | age 8 |
-| 56 | Pediatric L1 | SBP < 88 | age 9 |
-| 57 | Pediatric L1 | SBP <= 90 | age 10-15 |
-| 78 | Pediatric L2 | GCS == 12 or 13 | |
-| 99 | Geriatric L1 | GCS < 12 | |
-| 101 | Geriatric L1 | SBP < 110 | |
-| 123 | Geriatric L2 | GCS == 12 or 13 | |
+| ID  | Category     | Rule            | Notes      |
+| --- | ------------ | --------------- | ---------- |
+| 1   | Adult L1     | GCS < 12        |            |
+| 3   | Adult L1     | SBP < 90        |            |
+| 4   | Adult L1     | RR < 10         | Adult only |
+| 5   | Adult L1     | RR > 29         | Adult only |
+| 26  | Adult L2     | GCS == 12 or 13 |            |
+| 46  | Pediatric L1 | GCS < 12        |            |
+| 48  | Pediatric L1 | SBP < 70        | age 0-1    |
+| 49  | Pediatric L1 | SBP < 74        | age 2      |
+| 50  | Pediatric L1 | SBP < 76        | age 3      |
+| 51  | Pediatric L1 | SBP < 78        | age 4      |
+| 52  | Pediatric L1 | SBP < 80        | age 5      |
+| 53  | Pediatric L1 | SBP < 82        | age 6      |
+| 54  | Pediatric L1 | SBP < 84        | age 7      |
+| 55  | Pediatric L1 | SBP < 86        | age 8      |
+| 56  | Pediatric L1 | SBP < 88        | age 9      |
+| 57  | Pediatric L1 | SBP <= 90       | age 10-15  |
+| 78  | Pediatric L2 | GCS == 12 or 13 |            |
+| 99  | Geriatric L1 | GCS < 12        |            |
+| 101 | Geriatric L1 | SBP < 110       |            |
+| 123 | Geriatric L2 | GCS == 12 or 13 |            |
 
 #### Hybrid Criteria (2 total)
 
-| ID | Category | Numeric Rule | Qualitative Condition |
-|---|---|---|---|
-| 2 | Adult L1 | HR > 100 | AND poor perfusion |
-| 100 | Geriatric L1 | HR > 90 | AND poor perfusion |
+| ID  | Category     | Numeric Rule | Qualitative Condition |
+| --- | ------------ | ------------ | --------------------- |
+| 2   | Adult L1     | HR > 100     | AND poor perfusion    |
+| 100 | Geriatric L1 | HR > 90      | AND poor perfusion    |
 
 Note: Pediatric tachycardia (ID 47) is classified as **LLM-only** because "associated tachycardia" lacks a specific numeric HR threshold (pediatric tachycardia thresholds vary by age).
 
@@ -269,14 +277,14 @@ The server responds with a Server-Sent Events stream. Each event has a `type` fi
 
 ### SSE Event Types
 
-| Event Type | Payload | When Sent |
-|---|---|---|
-| `phase` | `{ phase: 'extracting' \| 'evaluating_vitals' \| 'analyzing_mechanism' \| 'complete' }` | At each pipeline stage transition |
-| `extraction` | `{ data: ExtractedFields, warnings: PlausibilityWarning[] }` | After Phase 1 completes |
-| `deterministic` | `{ matches: CriterionMatch[] }` | After Phase 2a completes |
-| `llm_evaluation` | `{ matches: CriterionMatch[], reasoning: string }` | After Phase 2b completes |
-| `result` | `{ data: EvaluationResult }` | After Phase 3 merge |
-| `error` | `{ message: string, phase: string, canRetry: boolean }` | On any pipeline failure |
+| Event Type       | Payload                                                                                 | When Sent                         |
+| ---------------- | --------------------------------------------------------------------------------------- | --------------------------------- |
+| `phase`          | `{ phase: 'extracting' \| 'evaluating_vitals' \| 'analyzing_mechanism' \| 'complete' }` | At each pipeline stage transition |
+| `extraction`     | `{ data: ExtractedFields, warnings: PlausibilityWarning[] }`                            | After Phase 1 completes           |
+| `deterministic`  | `{ matches: CriterionMatch[] }`                                                         | After Phase 2a completes          |
+| `llm_evaluation` | `{ matches: CriterionMatch[], reasoning: string }`                                      | After Phase 2b completes          |
+| `result`         | `{ data: EvaluationResult }`                                                            | After Phase 3 merge               |
+| `error`          | `{ message: string, phase: string, canRetry: boolean }`                                 | On any pipeline failure           |
 
 ### SSE Wire Format
 
@@ -355,6 +363,7 @@ A checklist-style display of all expected fields:
 - **Plausibility warnings**: Amber inline warning for out-of-range values (e.g., "SBP 300 is outside normal clinical range"). The value is still used for triage — warnings are informational, not blocking.
 
 Plausibility ranges:
+
 - Age: 0-120
 - SBP: 20-300 mmHg
 - HR: 20-300 bpm
@@ -391,6 +400,7 @@ LEVEL 3
 ```
 
 Each matched criterion shows:
+
 - Description text
 - What triggered it (e.g., "GCS = 8 < 12" or "Penetrating wound to chest described in report")
 - Confidence score (for LLM-evaluated criteria only, 0-1)
@@ -400,12 +410,12 @@ Each matched criterion shows:
 
 A prominent, color-coded card showing the recommended activation level:
 
-| Level | Color | Label |
-|---|---|---|
-| Level 1 | Red | "LEVEL 1 — Critical Activation" |
-| Level 2 | Orange | "LEVEL 2 — High-Priority Activation" |
-| Level 3 | Yellow | "LEVEL 3 — Moderate Activation" |
-| Standard Triage | Gray | "STANDARD TRIAGE — No Activation Criteria Met" |
+| Level           | Color  | Label                                          |
+| --------------- | ------ | ---------------------------------------------- |
+| Level 1         | Red    | "LEVEL 1 — Critical Activation"                |
+| Level 2         | Orange | "LEVEL 2 — High-Priority Activation"           |
+| Level 3         | Yellow | "LEVEL 3 — Moderate Activation"                |
+| Standard Triage | Gray   | "STANDARD TRIAGE — No Activation Criteria Met" |
 
 The card includes a justification summary explaining why this level was recommended.
 
@@ -420,7 +430,7 @@ An expandable section (collapsed by default) showing the LLM's step-by-step eval
 
 ### Disclaimer
 
-Minimal footer text: *"This is a decision-support tool. Clinical judgment should always take precedence."*
+Minimal footer text: _"This is a decision-support tool. Clinical judgment should always take precedence."_
 
 ---
 
@@ -435,6 +445,7 @@ Minimal footer text: *"This is a decision-support tool. Clinical judgment should
 ### Initial State
 
 Before any triage is submitted, the page shows a **welcome/instructional view** explaining:
+
 - What the tool does
 - How to use it
 - What information to include in the report
@@ -442,6 +453,7 @@ Before any triage is submitted, the page shows a **welcome/instructional view** 
 ### Header
 
 Minimal header bar containing:
+
 - **App name**: "Trauma Triage Agent"
 - **Dark mode toggle**: Sun/moon icon (using mode-watcher)
 - **History button**: Clock icon that opens a drawer (future phase)
@@ -450,6 +462,7 @@ Minimal header bar containing:
 ### Visual Tone
 
 **High-contrast emergency design** optimized for quick scanning in stressful environments:
+
 - Bold colors for activation levels
 - Large text for critical information (activation level uses extra-large, heavy font weight)
 - High contrast ratios
@@ -459,6 +472,7 @@ Minimal header bar containing:
 ### Responsive Design
 
 Full responsive design supporting all form factors equally:
+
 - Mobile (375px+)
 - Tablet (768px+)
 - Desktop (1280px+)
@@ -470,6 +484,7 @@ Both light and dark modes supported with a toggle. Uses mode-watcher (already in
 ### New Triage Behavior
 
 When a user submits a new triage while results from a previous one are visible:
+
 - New results replace the old ones immediately
 - Previous results are auto-saved to browser history (future phase)
 
@@ -484,6 +499,7 @@ Basic semantic HTML for the MVP. No WCAG AA compliance requirement yet.
 ### LLM Failure
 
 If the Claude API call fails (rate limit, timeout, network error):
+
 - Display the deterministic vital sign results that succeeded
 - Show a clear error message explaining the LLM portion failed
 - Provide a retry option for the LLM portion
