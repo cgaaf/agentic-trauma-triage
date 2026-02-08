@@ -57,7 +57,7 @@
 
 {#snippet chipBody(label: string, value: unknown, unit: string, state: ChipState)}
 	<div
-		class="flex flex-col rounded-r-md border-l-[3px] px-3 py-1.5 {chipClasses[state]}"
+		class="flex flex-1 flex-col rounded-r-md border-l-[3px] px-3 py-1.5 {chipClasses[state]}"
 	>
 		<span class="text-muted-foreground text-xs leading-none">{label}</span>
 		<div class="mt-0.5 flex items-baseline gap-0.5">
@@ -76,7 +76,7 @@
 <div class="space-y-3">
 	<h3 class="text-sm font-semibold">Recognized Inputs</h3>
 
-	<!-- Zone 1: Vital Signs Strip -->
+	<!-- Vital Signs — full width flex wrap -->
 	<div class="flex flex-wrap gap-2">
 		{#each vitalDefs as { key, label, unit } (key)}
 			{@const value = fields[key as keyof ExtractedFields]}
@@ -85,6 +85,7 @@
 		{/each}
 	</div>
 
+	<!-- Warnings — full width -->
 	{#if warnings.length > 0}
 		<div class="space-y-1">
 			{#each warnings as warning (warning.field)}
@@ -98,8 +99,8 @@
 		</div>
 	{/if}
 
-	<!-- Zone 2: Clinical Details -->
-	<div class="space-y-1">
+	<!-- Clinical Details — 2-column grid on md: -->
+	<div class="grid grid-cols-1 gap-x-4 gap-y-1 md:grid-cols-2">
 		{#each clinicalDefs as { key, label } (key)}
 			{@const value = fields[key as keyof ExtractedFields]}
 			{@const present = isPresent(value)}

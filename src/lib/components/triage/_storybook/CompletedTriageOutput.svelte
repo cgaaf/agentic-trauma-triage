@@ -1,6 +1,5 @@
 <script lang="ts">
 	import ReportInput from '../ReportInput.svelte';
-	import ProgressSteps from '../ProgressSteps.svelte';
 	import RecognizedInputs from '../RecognizedInputs.svelte';
 	import ActivationCard from '../ActivationCard.svelte';
 	import CriteriaMatches from '../CriteriaMatches.svelte';
@@ -39,11 +38,9 @@
 </script>
 
 <div class="mx-auto w-full max-w-4xl space-y-6 px-4 py-6">
-	<ReportInput value={report} loading={false} {onsubmit} />
+	<ReportInput value={report} loading={false} collapsed={true} {onsubmit} />
 
 	<Separator />
-
-	<ProgressSteps phase="complete" />
 
 	<RecognizedInputs {fields} {warnings} />
 

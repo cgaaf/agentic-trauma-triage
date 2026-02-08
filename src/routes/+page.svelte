@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slide } from 'svelte/transition';
 	import Header from '$lib/components/triage/Header.svelte';
 	import ReportInput from '$lib/components/triage/ReportInput.svelte';
 	import WelcomeView from '$lib/components/triage/WelcomeView.svelte';
@@ -15,6 +16,18 @@
 
 	let { data } = $props();
 	let reportValue = $state('');
+	let showProgressSteps = $state(true);
+
+	$effect(() => {
+		const phase = triageState.phase;
+		if (phase === 'complete') {
+			const timer = setTimeout(() => { showProgressSteps = false; }, 1000);
+			return () => clearTimeout(timer);
+		}
+		if (phase !== 'idle') {
+			showProgressSteps = true;
+		}
+	});
 
 	function handleSubmit(report: string) {
 		triageState.submitReport(report);
@@ -36,7 +49,7 @@
 
 	<main class="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-6">
 		<!-- Input Section -->
-		<ReportInput bind:value={reportValue} loading={triageState.isLoading} onsubmit={handleSubmit} />
+		<ReportInput bind:value={reportValue} loading={triageState.isLoading} onsubmit={handleSubmit} collapsed={triageState.phase === 'complete'} />
 
 		<Separator />
 
@@ -46,8 +59,10 @@
 		{/if}
 
 		<!-- Progress Steps -->
-		{#if triageState.phase !== 'idle'}
-			<ProgressSteps phase={triageState.phase} />
+		{#if triageState.phase !== 'idle' && showProgressSteps}
+			<div transition:slide={{ duration: 300 }}>
+				<ProgressSteps phase={triageState.phase} />
+			</div>
 		{/if}
 
 		<!-- Error Display -->
