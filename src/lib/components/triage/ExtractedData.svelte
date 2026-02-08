@@ -33,9 +33,9 @@
 	] as const;
 
 	const chipClasses: Record<string, string> = {
-		present: 'border-l-green-500 bg-green-500/8 dark:bg-green-500/10',
-		warning: 'border-l-amber-500 bg-amber-500/10 dark:bg-amber-500/15',
-		missing: 'border-l-muted-foreground/40 bg-muted/50',
+		present: 'rounded-md border border-green-500/40 bg-green-500/5 dark:border-green-500/30 dark:bg-green-500/8',
+		warning: 'rounded-md border border-amber-500/50 bg-amber-500/8 dark:border-amber-500/40 dark:bg-amber-500/10',
+		missing: 'rounded-md border border-dashed border-muted-foreground/20 bg-muted/30 dark:border-muted-foreground/25',
 	};
 
 	function getWarning(field: string): PlausibilityWarning | undefined {
@@ -63,9 +63,7 @@
 </script>
 
 {#snippet chipBody(label: string, value: unknown, unit: string, state: ChipState)}
-	<div
-		class="flex flex-1 flex-col rounded-r-md border-l-[3px] px-3 py-1.5 {chipClasses[state]}"
-	>
+	<div class="flex flex-1 flex-col px-3 py-1.5 {chipClasses[state]}">
 		<span class="text-muted-foreground text-xs leading-none">{label}</span>
 		<div class="mt-0.5 flex items-baseline gap-0.5">
 			{#if state === 'missing'}
@@ -74,6 +72,9 @@
 				<span class="text-foreground tabular-nums text-base font-bold leading-none">{value}</span>
 				{#if unit}
 					<span class="text-muted-foreground/60 text-xs leading-none">{unit}</span>
+				{/if}
+				{#if state === 'warning'}
+					<AlertTriangle class="size-3 shrink-0 text-amber-500" />
 				{/if}
 			{/if}
 		</div>
@@ -97,13 +98,18 @@
 		{#each clinicalDefs as { key, label } (key)}
 			{@const value = fields[key as keyof ExtractedFields]}
 			{@const state = getChipState(key, value)}
-			<div class="flex flex-col rounded-r-md border-l-[3px] px-3 py-1.5 {chipClasses[state]}">
+			<div class="flex flex-col px-3 py-1.5 {chipClasses[state]}">
 				<span class="text-muted-foreground text-xs leading-none">{label}</span>
 				<div class="mt-0.5">
 					{#if state === 'missing'}
 						<span class="text-muted-foreground text-sm leading-snug">&mdash;</span>
 					{:else}
-						<span class="text-foreground text-sm leading-snug">{formatClinical(value)}</span>
+						<div class="flex items-start gap-1">
+							<span class="text-foreground text-sm leading-snug">{formatClinical(value)}</span>
+							{#if state === 'warning'}
+								<AlertTriangle class="mt-0.5 size-3 shrink-0 text-amber-500" />
+							{/if}
+						</div>
 					{/if}
 				</div>
 			</div>
