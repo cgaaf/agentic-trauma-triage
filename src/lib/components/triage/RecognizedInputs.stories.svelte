@@ -6,6 +6,7 @@
 		partialFields,
 		minimalFields,
 		sampleWarnings,
+		sampleMissingFieldWarnings,
 	} from './_storybook/mock-data.js';
 
 	const { Story } = defineMeta({
@@ -42,8 +43,24 @@
 			...allFieldsPresent,
 			sbp: 240,
 			hr: 210,
+			rr: null,
+			gcs: null,
 		},
 		warnings: sampleWarnings,
+		missingFieldWarnings: sampleMissingFieldWarnings,
+	}}
+/>
+
+<Story
+	name="MissingFieldsOnly"
+	args={{
+		fields: {
+			...allFieldsPresent,
+			rr: null,
+			gcs: null,
+		},
+		warnings: [],
+		missingFieldWarnings: sampleMissingFieldWarnings,
 	}}
 />
 

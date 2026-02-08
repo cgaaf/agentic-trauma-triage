@@ -96,16 +96,8 @@
 			<RecognizedInputs
 				fields={triageState.extractedFields}
 				warnings={triageState.plausibilityWarnings}
+				missingFieldWarnings={triageState.missingFieldWarnings}
 			/>
-		{/if}
-
-		<!-- Missing Field Warnings -->
-		{#if triageState.missingFieldWarnings.length > 0}
-			<div class="space-y-1">
-				{#each triageState.missingFieldWarnings as warning}
-					<p class="text-xs text-amber-600 dark:text-amber-400">{warning}</p>
-				{/each}
-			</div>
 		{/if}
 
 		<!-- Activation Level Card -->

@@ -5,10 +5,17 @@
 	let {
 		fields,
 		warnings = [],
+		missingFieldWarnings = [],
 	}: {
 		fields: ExtractedFields;
 		warnings?: PlausibilityWarning[];
+		missingFieldWarnings?: string[];
 	} = $props();
+
+	const allWarnings = $derived([
+		...warnings.map((w) => w.message),
+		...missingFieldWarnings,
+	]);
 
 	const vitalDefs = [
 		{ key: 'age', label: 'Age', unit: 'yr' },
@@ -85,20 +92,6 @@
 		{/each}
 	</div>
 
-	<!-- Warnings — full width -->
-	{#if warnings.length > 0}
-		<div class="space-y-1">
-			{#each warnings as warning (warning.field)}
-				<div class="flex items-start gap-1.5">
-					<AlertTriangle class="mt-0.5 size-3.5 shrink-0 text-amber-500" />
-					<p class="text-sm text-amber-700 dark:text-amber-400">
-						{warning.message}
-					</p>
-				</div>
-			{/each}
-		</div>
-	{/if}
-
 	<!-- Clinical Details — 2-column grid on md: -->
 	<div class="grid grid-cols-1 gap-x-4 gap-y-1.5 md:grid-cols-2">
 		{#each clinicalDefs as { key, label } (key)}
@@ -114,4 +107,16 @@
 			</div>
 		{/each}
 	</div>
+
+	<!-- Consolidated Warnings -->
+	{#if allWarnings.length > 0}
+		<div class="space-y-1">
+			{#each allWarnings as message (message)}
+				<div class="flex items-start gap-1.5">
+					<AlertTriangle class="mt-0.5 size-3 shrink-0 text-amber-500" />
+					<p class="text-xs text-amber-600 dark:text-amber-400">{message}</p>
+				</div>
+			{/each}
+		</div>
+	{/if}
 </div>

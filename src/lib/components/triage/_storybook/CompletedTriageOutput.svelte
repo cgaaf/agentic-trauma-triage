@@ -40,15 +40,7 @@
 
 	<Separator />
 
-	<RecognizedInputs {fields} {warnings} />
-
-	{#if missingFieldWarnings.length > 0}
-		<div class="space-y-1">
-			{#each missingFieldWarnings as warning (warning)}
-				<p class="text-xs text-amber-600 dark:text-amber-400">{warning}</p>
-			{/each}
-		</div>
-	{/if}
+	<RecognizedInputs {fields} {warnings} {missingFieldWarnings} />
 
 	<ActivationCard
 		level={activationLevel}
