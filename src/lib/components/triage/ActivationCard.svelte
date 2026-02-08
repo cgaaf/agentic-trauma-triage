@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { ChevronDown } from '@lucide/svelte';
 	import type { CriterionMatch, FinalActivationLevel } from '$lib/types/index.js';
@@ -24,22 +23,22 @@
 		{ border: string; bg: string; text: string }
 	> = {
 		'Level 1': {
-			border: 'border-l-red-600',
+			border: 'border-red-600',
 			bg: 'bg-red-50 dark:bg-red-950/40',
 			text: 'text-red-700 dark:text-red-400',
 		},
 		'Level 2': {
-			border: 'border-l-orange-500',
+			border: 'border-orange-500',
 			bg: 'bg-orange-50 dark:bg-orange-950/40',
 			text: 'text-orange-700 dark:text-orange-400',
 		},
 		'Level 3': {
-			border: 'border-l-yellow-500',
+			border: 'border-yellow-500',
 			bg: 'bg-yellow-50 dark:bg-yellow-950/40',
 			text: 'text-yellow-700 dark:text-yellow-400',
 		},
 		'Standard Triage': {
-			border: 'border-l-gray-400',
+			border: 'border-gray-400',
 			bg: 'bg-muted/50',
 			text: 'text-muted-foreground',
 		},
@@ -53,7 +52,7 @@
 	);
 </script>
 
-<div class="rounded-lg border border-l-4 {c.border} {c.bg} p-4 space-y-3">
+<div class="rounded-lg border {c.border} {c.bg} p-4 space-y-3">
 	<!-- Header: Level name + criteria count -->
 	<div class="flex items-start justify-between gap-2">
 		<div>
@@ -83,16 +82,6 @@
 						{#if expanded}
 							<div transition:slide={{ duration: 150 }}>
 								<p class="mt-1 text-xs text-muted-foreground">{match.triggerReason}</p>
-								<div class="mt-1.5 flex items-center gap-1.5">
-									{#if match.confidence !== undefined}
-										<Badge variant="outline" class="text-xs">
-											{Math.round(match.confidence * 100)}%
-										</Badge>
-									{/if}
-									<Badge variant="secondary" class="text-xs">
-										{match.source}
-									</Badge>
-								</div>
 							</div>
 						{/if}
 					</div>
