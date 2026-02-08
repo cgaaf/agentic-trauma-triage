@@ -93,17 +93,19 @@
 	</div>
 
 	<!-- Clinical Details — 2-column grid on md: -->
-	<div class="grid grid-cols-1 gap-x-4 gap-y-1.5 md:grid-cols-2">
+	<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 		{#each clinicalDefs as { key, label } (key)}
 			{@const value = fields[key as keyof ExtractedFields]}
-			{@const present = isPresent(value)}
-			<div>
-				<span class="text-muted-foreground text-xs">{label}</span>
-				{#if present}
-					<p class="text-sm">{formatClinical(value)}</p>
-				{:else}
-					<p class="text-muted-foreground text-sm italic">Not provided</p>
-				{/if}
+			{@const state = getChipState(key, value)}
+			<div class="flex flex-col rounded-r-md border-l-[3px] px-3 py-1.5 {chipClasses[state]}">
+				<span class="text-muted-foreground text-xs leading-none">{label}</span>
+				<div class="mt-0.5">
+					{#if state === 'missing'}
+						<span class="text-muted-foreground text-sm leading-snug">&mdash;</span>
+					{:else}
+						<span class="text-foreground text-sm leading-snug">{formatClinical(value)}</span>
+					{/if}
+				</div>
 			</div>
 		{/each}
 	</div>
