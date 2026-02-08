@@ -68,6 +68,8 @@ Three vitest projects configured in `vite.config.ts`:
 
 `requireAssertions: true` is enabled globally — every test must contain at least one assertion.
 
+- **Storybook wrappers** (`src/lib/components/triage/_storybook/`) duplicate page-level layout from `+page.svelte` (containers, dividers, spacing). When changing UI elements in the page layout, update the Storybook wrappers to match.
+
 ## Known Issues
 
 Pre-existing TypeScript errors in shadcn-svelte generated code (chart-container, form-fieldset, sidebar-rail). These are upstream issues — ignore them during `pnpm check`.

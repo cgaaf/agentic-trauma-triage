@@ -34,7 +34,12 @@
 
 {#if matches.length > 0}
 	{@const groups = groupByLevel(matches)}
-	<h3 class="text-sm font-semibold mb-2">Additional Criteria Met</h3>
+	<div class="space-y-3">
+	<div
+		class="h-px w-full"
+		style="background-image: repeating-linear-gradient(90deg, var(--border) 0 6px, transparent 6px 12px)"
+	></div>
+	<h3 class="text-sm font-bold tracking-wide text-muted-foreground/60 [font-variant-caps:small-caps]">Additional Criteria Met</h3>
 	<div class="rounded-lg border bg-muted/30 p-4 space-y-3">
 		<div class="space-y-6">
 			{#each groups as group, i (group.level)}
@@ -93,5 +98,6 @@
 				{expanded ? 'Hide' : 'Show'} details
 			</Button>
 		</div>
+	</div>
 	</div>
 {/if}

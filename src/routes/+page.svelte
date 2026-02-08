@@ -11,7 +11,7 @@
 	import DisclaimerFooter from '$lib/components/triage/DisclaimerFooter.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '$lib/components/ui/alert/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
+
 	import { AlertTriangle, RotateCcw } from '@lucide/svelte';
 	import { triageState } from '$lib/state/triage.svelte.js';
 
@@ -60,7 +60,10 @@
 			</div>
 		{/if}
 
-		<Separator />
+		<div
+			class="h-px w-full"
+			style="background-image: repeating-linear-gradient(90deg, var(--border) 0 6px, transparent 6px 12px)"
+		></div>
 
 		<!-- Welcome / Idle State -->
 		{#if triageState.phase === 'idle'}

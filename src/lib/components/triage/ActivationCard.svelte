@@ -52,6 +52,12 @@
 	);
 </script>
 
+<div class="space-y-3">
+<div
+	class="h-px w-full"
+	style="background-image: repeating-linear-gradient(90deg, var(--border) 0 6px, transparent 6px 12px)"
+></div>
+<h3 class="text-sm font-bold tracking-wide text-muted-foreground/60 [font-variant-caps:small-caps]">Recommended Trauma Triage Level</h3>
 <div class="rounded-lg border {c.border} {c.bg} p-4 space-y-3">
 	<!-- Header: Level name + criteria count -->
 	<div class="flex items-start justify-between gap-2">
@@ -120,4 +126,5 @@
 			{expanded ? 'Hide' : 'Show'} details
 		</Button>
 	</div>
+</div>
 </div>

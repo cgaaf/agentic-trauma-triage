@@ -82,7 +82,7 @@
 {/snippet}
 
 <div class="space-y-3">
-	<h3 class="text-sm font-semibold">Extracted Data</h3>
+	<h3 class="text-sm font-bold tracking-wide text-muted-foreground/60 [font-variant-caps:small-caps]">Extracted Data</h3>
 
 	<!-- Vital Signs — full width flex wrap -->
 	<div class="flex flex-wrap gap-2">

@@ -4,7 +4,7 @@
 	import ActivationCard from '../ActivationCard.svelte';
 	import AdditionalCriteria from '../AdditionalCriteria.svelte';
 	import DisclaimerFooter from '../DisclaimerFooter.svelte';
-	import { Separator } from '$lib/components/ui/separator/index.js';
+
 	import type {
 		ExtractedFields,
 		PlausibilityWarning,
@@ -38,7 +38,10 @@
 <div class="mx-auto w-full max-w-4xl space-y-6 px-4 py-6">
 	<ReportDisplay text={report} />
 
-	<Separator />
+	<div
+		class="h-px w-full"
+		style="background-image: repeating-linear-gradient(90deg, var(--border) 0 6px, transparent 6px 12px)"
+	></div>
 
 	<ExtractedData {fields} {warnings} {missingFieldWarnings} />
 
