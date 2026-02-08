@@ -68,7 +68,7 @@
 						<div class="divide-y divide-dashed divide-border">
 							{#each group.matches as match (match.criterionId)}
 								<div class="px-3 py-2">
-									<p class="text-sm font-medium">{match.description}</p>
+									<p class="font-mono text-sm font-medium">{match.description}</p>
 									{#if expanded}
 										<div transition:slide={{ duration: 150 }}>
 											<p class="mt-1 text-xs text-muted-foreground">

@@ -25,6 +25,8 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.0",
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@internationalized/date": "^3.11.0",
     "@lucide/svelte": "^0.561.0",
     "@storybook/addon-a11y": "^10.2.7",

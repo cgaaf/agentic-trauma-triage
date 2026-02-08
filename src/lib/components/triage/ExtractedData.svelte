@@ -69,7 +69,7 @@
 			{#if state === 'missing'}
 				<span class="text-muted-foreground text-base font-bold leading-none">&mdash;</span>
 			{:else}
-				<span class="text-foreground tabular-nums text-base font-bold leading-none">{value}</span>
+				<span class="text-foreground font-mono tabular-nums text-base font-bold leading-none">{value}</span>
 				{#if unit}
 					<span class="text-muted-foreground/60 text-xs leading-none">{unit}</span>
 				{/if}
@@ -105,7 +105,7 @@
 						<span class="text-muted-foreground text-sm leading-snug">&mdash;</span>
 					{:else}
 						<div class="flex items-start gap-1">
-							<span class="text-foreground text-sm font-medium leading-normal">{formatClinical(value)}</span>
+							<span class="text-foreground font-mono text-sm font-medium leading-normal">{formatClinical(value)}</span>
 							{#if state === 'warning'}
 								<AlertTriangle class="mt-0.5 size-3 shrink-0 text-amber-500" />
 							{/if}
