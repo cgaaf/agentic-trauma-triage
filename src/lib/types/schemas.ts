@@ -80,6 +80,33 @@ export const EvaluationResultSchema = z.object({
   missingFieldWarnings: z.array(z.string()),
 });
 
+// ─── LLM Response Validation (raw tool_use output shapes) ─────────
+export const LlmExtractionResponseSchema = z.object({
+  isTraumaReport: z.boolean(),
+  age: z.number().int().nullable(),
+  sbp: z.number().nullable(),
+  hr: z.number().nullable(),
+  rr: z.number().nullable(),
+  gcs: z.number().nullable(),
+  airwayStatus: z.string().nullable(),
+  breathingStatus: z.string().nullable(),
+  mechanism: z.string().nullable(),
+  injuries: z.array(z.string()).nullable(),
+  additionalContext: z.string().nullable(),
+});
+
+export const LlmEvaluationResponseSchema = z.object({
+  matches: z.array(
+    z.object({
+      criterion_id: z.number().int(),
+      confidence: z.number().min(0).max(1),
+      trigger_reason: z.string(),
+    }),
+  ),
+  hybrid_confirmations: z.array(z.number().int()),
+  reasoning_narrative: z.string(),
+});
+
 // ─── SSE Event Types (discriminated union) ─────────────────────────
 export const PhaseEventSchema = z.object({
   type: z.literal("phase"),

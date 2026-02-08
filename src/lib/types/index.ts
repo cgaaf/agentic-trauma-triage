@@ -14,6 +14,8 @@ import type {
   MatchSourceSchema,
   VitalFieldSchema,
   VitalOperatorSchema,
+  LlmExtractionResponseSchema,
+  LlmEvaluationResponseSchema,
 } from "./schemas.js";
 
 export type VitalRule = z.infer<typeof VitalRuleSchema>;
@@ -30,3 +32,5 @@ export type EvaluationMethod = z.infer<typeof EvaluationMethodSchema>;
 export type MatchSource = z.infer<typeof MatchSourceSchema>;
 export type VitalField = z.infer<typeof VitalFieldSchema>;
 export type VitalOperator = z.infer<typeof VitalOperatorSchema>;
+export type LlmExtractionResponse = z.infer<typeof LlmExtractionResponseSchema>;
+export type LlmEvaluationResponse = z.infer<typeof LlmEvaluationResponseSchema>;

@@ -106,7 +106,13 @@ class TriageState {
         return;
       }
 
-      const reader = response.body!.getReader();
+      if (!response.body) {
+        this.errorMessage = "No response body received";
+        this.phase = "error";
+        return;
+      }
+
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
 
@@ -123,12 +129,13 @@ class TriageState {
           const json = line.slice(6);
           if (!json) continue;
 
+          let event: SSEEvent;
           try {
-            const event: SSEEvent = JSON.parse(json);
-            this.#handleEvent(event);
+            event = JSON.parse(json);
           } catch {
-            // Skip malformed JSON lines
+            continue;
           }
+          this.#handleEvent(event);
         }
       }
     } catch (error) {

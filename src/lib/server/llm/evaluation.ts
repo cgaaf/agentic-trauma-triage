@@ -1,4 +1,5 @@
 import type { Criterion, CriterionMatch, ExtractedFields } from "$lib/types/index.js";
+import { LlmEvaluationResponseSchema } from "$lib/types/schemas.js";
 import { CRITERIA_MAP } from "$lib/server/criteria/criteria.js";
 import { getClient, EVALUATION_MODEL } from "./anthropic.js";
 import { buildEvaluationSystemPrompt, buildEvaluationTool } from "./prompts.js";
@@ -59,16 +60,17 @@ export async function evaluateWithLlm(
     throw new Error("LLM did not return a tool_use response for evaluation");
   }
 
-  const input = toolBlock.input as {
-    matches: Array<{ criterion_id: number; confidence: number; trigger_reason: string }>;
-    hybrid_confirmations: number[];
-    reasoning_narrative: string;
-  };
+  const input = LlmEvaluationResponseSchema.parse(toolBlock.input);
 
   const matches: CriterionMatch[] = [];
   for (const m of input.matches) {
     const criterion = CRITERIA_MAP.get(m.criterion_id);
-    if (!criterion) continue;
+    if (!criterion) {
+      console.warn(
+        `[evaluation] Unknown criterion ID ${m.criterion_id} returned by LLM — skipping`,
+      );
+      continue;
+    }
     matches.push({
       criterionId: m.criterion_id,
       description: criterion.description,

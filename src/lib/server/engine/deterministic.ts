@@ -19,7 +19,12 @@ function evaluateRule(value: number, rule: VitalRule): boolean {
     case "==":
       return value === rule.threshold;
     case "range":
-      return value >= rule.threshold && value <= rule.thresholdHigh!;
+      if (rule.thresholdHigh == null) throw new Error("Range rule missing thresholdHigh");
+      return value >= rule.threshold && value <= rule.thresholdHigh;
+    default: {
+      const _exhaustive: never = rule.operator;
+      throw new Error(`Unknown operator: ${_exhaustive}`);
+    }
   }
 }
 
@@ -39,6 +44,10 @@ function buildTriggerReason(field: string, value: number, rule: VitalRule): stri
       return `${fieldLabel} = ${value} == ${rule.threshold}`;
     case "range":
       return `${fieldLabel} = ${value} (in range ${rule.threshold}-${rule.thresholdHigh})`;
+    default: {
+      const _exhaustive: never = rule.operator;
+      throw new Error(`Unknown operator: ${_exhaustive}`);
+    }
   }
 }
 

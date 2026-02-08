@@ -1,8 +1,15 @@
 import type { Handle } from "@sveltejs/kit";
 import { json } from "@sveltejs/kit";
+import { env } from "$env/dynamic/private";
+import { createRateLimiter, type RateLimiter } from "$lib/server/rate-limiter.js";
 
 /**
  * Soft in-memory rate limiter for /api/triage.
+ *
+ * ── Configuration (environment variables, required) ─────────────────
+ *
+ *   RATE_LIMIT             Max requests per window (e.g. "10")
+ *   RATE_LIMIT_WINDOW_MS   Window duration in ms (e.g. "60000")
  *
  * ── Primary defense (configure in Cloudflare dashboard) ─────────────
  *
@@ -29,41 +36,48 @@ import { json } from "@sveltejs/kit";
  *   - Local development (where the WAF rule doesn't apply)
  */
 
-const RATE_LIMIT = 10;
-const WINDOW_MS = 60_000;
+function parseRequiredInt(name: string): number {
+  const raw = env[name];
+  if (!raw) throw new Error(`Missing required environment variable: ${name}`);
+  const parsed = parseInt(raw, 10);
+  if (Number.isNaN(parsed)) throw new Error(`Invalid integer for ${name}: "${raw}"`);
+  return parsed;
+}
 
-/** IP → request timestamps within the current window. */
-const hits = new Map<string, number[]>();
+let limiter: RateLimiter | null = null;
 
-let lastCleanup = Date.now();
-
-/** Prune stale entries every 5 minutes to prevent unbounded memory growth. */
-function cleanup(now: number) {
-  if (now - lastCleanup < 5 * WINDOW_MS) return;
-  lastCleanup = now;
-  const cutoff = now - WINDOW_MS;
-  for (const [ip, timestamps] of hits) {
-    const valid = timestamps.filter((t) => t > cutoff);
-    if (valid.length === 0) hits.delete(ip);
-    else hits.set(ip, valid);
+function getLimiter(): RateLimiter {
+  if (!limiter) {
+    limiter = createRateLimiter({
+      limit: parseRequiredInt("RATE_LIMIT"),
+      windowMs: parseRequiredInt("RATE_LIMIT_WINDOW_MS"),
+    });
   }
+  return limiter;
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
   if (event.url.pathname === "/api/triage" && event.request.method === "POST") {
-    const now = Date.now();
-    cleanup(now);
-
-    const ip = event.getClientAddress();
-    const cutoff = now - WINDOW_MS;
-    const timestamps = (hits.get(ip) ?? []).filter((t) => t > cutoff);
-
-    if (timestamps.length >= RATE_LIMIT) {
-      return json({ error: "Too many requests. Please try again in a minute." }, { status: 429 });
+    let ip: string;
+    try {
+      ip = event.getClientAddress();
+    } catch {
+      // If IP resolution fails (e.g. misconfigured proxy), fail open
+      return resolve(event);
     }
 
-    timestamps.push(now);
-    hits.set(ip, timestamps);
+    const result = getLimiter().check(ip);
+
+    if (!result.allowed) {
+      const retryAfterSec = Math.ceil((result.retryAfterMs ?? 60_000) / 1000);
+      return json(
+        { error: "Too many requests. Please try again in a minute." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(retryAfterSec) },
+        },
+      );
+    }
   }
 
   return resolve(event);

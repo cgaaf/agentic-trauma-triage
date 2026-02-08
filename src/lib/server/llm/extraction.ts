@@ -1,4 +1,5 @@
 import type { ExtractedFields } from "$lib/types/index.js";
+import { LlmExtractionResponseSchema } from "$lib/types/schemas.js";
 import { getClient, EXTRACTION_MODEL } from "./anthropic.js";
 import { EXTRACTION_SYSTEM_PROMPT, EXTRACTION_TOOL } from "./prompts.js";
 
@@ -31,21 +32,21 @@ export async function extractFields(report: string): Promise<{
     throw new Error("LLM did not return a tool_use response");
   }
 
-  const input = toolBlock.input as Record<string, unknown>;
+  const input = LlmExtractionResponseSchema.parse(toolBlock.input);
 
   return {
-    isTraumaReport: input.isTraumaReport as boolean,
+    isTraumaReport: input.isTraumaReport,
     fields: {
-      age: (input.age as number) ?? null,
-      sbp: (input.sbp as number) ?? null,
-      hr: (input.hr as number) ?? null,
-      rr: (input.rr as number) ?? null,
-      gcs: (input.gcs as number) ?? null,
-      airwayStatus: (input.airwayStatus as string) ?? null,
-      breathingStatus: (input.breathingStatus as string) ?? null,
-      mechanism: (input.mechanism as string) ?? null,
-      injuries: (input.injuries as string[]) ?? null,
-      additionalContext: (input.additionalContext as string) ?? null,
+      age: input.age,
+      sbp: input.sbp,
+      hr: input.hr,
+      rr: input.rr,
+      gcs: input.gcs,
+      airwayStatus: input.airwayStatus,
+      breathingStatus: input.breathingStatus,
+      mechanism: input.mechanism,
+      injuries: input.injuries,
+      additionalContext: input.additionalContext,
     },
   };
 }
