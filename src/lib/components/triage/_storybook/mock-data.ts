@@ -182,7 +182,7 @@ LLM evaluation identified additional criteria: penetrating mechanism not applica
 
 Final determination: Level 1 activation based on hemodynamic instability (SBP < 90), high-energy mechanism with ejection, and flail chest. Multiple Level 1 criteria corroborate the highest activation level.`;
 
-export const sampleReport = `EMS Report: 34-year-old male, high-speed MVC with rollover on I-85. Patient was unrestrained driver, found approximately 15 feet from vehicle suggesting partial ejection.
+export const sampleReport = `34-year-old male, high-speed MVC with rollover on I-85. Patient was unrestrained driver, found approximately 15 feet from vehicle suggesting partial ejection.
 
 Vitals on scene: BP 88/62, HR 125, RR 28, GCS 12 (E3V4M5). SpO2 92% on 15L NRB.
 
@@ -254,7 +254,7 @@ export const geriatricLevel3Anticoag: CriterionMatch = {
     "Patient is 72 years old, on warfarin (INR 2.8), ground-level fall with head strike",
 };
 
-export const geriatricReport = `EMS Report: 72-year-old female, ground-level fall from standing at home. Patient tripped on rug and fell, striking head on hardwood floor.
+export const geriatricReport = `72-year-old female, ground-level fall from standing at home. Patient tripped on rug and fell, striking head on hardwood floor.
 
 Vitals on scene: BP 102/68, HR 98, RR 18, GCS 14 (E4V4M6). SpO2 97% on RA.
 
@@ -262,7 +262,7 @@ Right hip pain with external rotation and shortening. Occipital scalp hematoma, 
 
 C-collar applied as precaution. IV access established. ETA 12 minutes.`;
 
-export const pediatricReport = `EMS Report: 8-year-old male, bicycle vs. automobile collision on residential street. Child was riding bicycle and struck by sedan traveling approximately 30 mph.
+export const pediatricReport = `8-year-old male, bicycle vs. automobile collision on residential street. Child was riding bicycle and struck by sedan traveling approximately 30 mph.
 
 Vitals on scene: BP 84/56, HR 145, RR 32, GCS 10 (E3V3M4). SpO2 94% on NRB.
 
@@ -270,7 +270,7 @@ Helmeted. Left femur angulated mid-shaft. Abdomen distended with guarding in LUQ
 
 IV access x1 established, 20mL/kg NS bolus initiated. C-collar applied, boarded. ETA 6 minutes.`;
 
-export const standardTriageReport = `EMS Report: 28-year-old male, tripped on curb while walking and fell onto outstretched right hand. No LOC, ambulatory on scene.
+export const standardTriageReport = `28-year-old male, tripped on curb while walking and fell onto outstretched right hand. No LOC, ambulatory on scene.
 
 Vitals: BP 122/78, HR 82, RR 16, GCS 15. SpO2 99% on RA.
 

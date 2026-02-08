@@ -16,7 +16,7 @@
 
 <Story name="Collapsed" args={{ text: sampleReport }} />
 
-<Story name="ShortText" args={{ text: 'EMS Report: 45-year-old male, minor laceration to left forearm.' }} />
+<Story name="ShortText" args={{ text: '45-year-old male, minor laceration to left forearm.' }} />
 
 <Story name="GeriatricReport" args={{ text: geriatricReport }} />
 

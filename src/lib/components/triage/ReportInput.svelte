@@ -1,9 +1,19 @@
 <script lang="ts">
+	import { tick } from 'svelte';
+	import { slide } from 'svelte/transition';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
-	import { SendHorizonal, ChevronDown, ClipboardList, Stethoscope, Zap } from '@lucide/svelte';
+	import {
+		SendHorizonal,
+		ChevronDown,
+		ClipboardList,
+		Stethoscope,
+		Zap,
+		Sparkles,
+	} from '@lucide/svelte';
+	import { exampleReports } from '$lib/data/example-reports.js';
 
 	let {
 		value = $bindable(''),
@@ -15,8 +25,32 @@
 		onsubmit?: (report: string) => void;
 	} = $props();
 
+	let textareaRef: HTMLTextAreaElement | null = $state(null);
 	let whatToIncludeOpen = $state(false);
 	let howItWorksOpen = $state(false);
+
+	const showExamples = $derived(!value.trim() && !loading);
+
+	async function selectExample(text: string) {
+		const el = textareaRef;
+		const startHeight = el?.offsetHeight ?? 0;
+
+		value = text;
+		await tick();
+
+		if (el) {
+			const endHeight = el.offsetHeight;
+			if (startHeight !== endHeight) {
+				el.animate(
+					[
+						{ height: `${startHeight}px`, overflow: 'hidden' },
+						{ height: `${endHeight}px`, overflow: 'hidden' },
+					],
+					{ duration: 300, easing: 'ease-out' },
+				);
+			}
+		}
+	}
 
 	function handleSubmit() {
 		if (value.trim() && onsubmit) {
@@ -40,6 +74,7 @@
 		role="form"
 	>
 		<Textarea
+			bind:ref={textareaRef}
 			bind:value
 			placeholder="Describe the patient, their vitals, and what happened..."
 			rows={4}
@@ -58,6 +93,25 @@
 			</Button>
 		</div>
 	</div>
+
+	{#if showExamples}
+		<div class="flex flex-wrap items-center justify-center gap-2" transition:slide={{ duration: 200 }}>
+			<span class="flex items-center gap-1 text-xs text-muted-foreground">
+				<Sparkles class="size-3" />
+				Try an example
+			</span>
+			{#each exampleReports as example (example.label)}
+				<button
+					type="button"
+					class="cursor-pointer rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted-foreground shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
+					onclick={() => selectExample(example.text)}
+					title={example.description}
+				>
+					{example.label}
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	<div class="flex justify-center gap-3">
 		<Collapsible.Root bind:open={whatToIncludeOpen}>
