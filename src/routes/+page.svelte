@@ -5,7 +5,7 @@
 	import ReportDisplay from '$lib/components/triage/ReportDisplay.svelte';
 	import WelcomeView from '$lib/components/triage/WelcomeView.svelte';
 	import ProgressSteps from '$lib/components/triage/ProgressSteps.svelte';
-	import RecognizedInputs from '$lib/components/triage/RecognizedInputs.svelte';
+	import ExtractedData from '$lib/components/triage/ExtractedData.svelte';
 	import AdditionalCriteria from '$lib/components/triage/AdditionalCriteria.svelte';
 	import ActivationCard from '$lib/components/triage/ActivationCard.svelte';
 	import DisclaimerFooter from '$lib/components/triage/DisclaimerFooter.svelte';
@@ -91,9 +91,9 @@
 			</Alert>
 		{/if}
 
-		<!-- Recognized Inputs -->
+		<!-- Extracted Data -->
 		{#if triageState.extractedFields}
-			<RecognizedInputs
+			<ExtractedData
 				fields={triageState.extractedFields}
 				warnings={triageState.plausibilityWarnings}
 				missingFieldWarnings={triageState.missingFieldWarnings}

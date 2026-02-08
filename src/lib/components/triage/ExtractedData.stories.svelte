@@ -1,6 +1,6 @@
 <script module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
-	import RecognizedInputs from './RecognizedInputs.svelte';
+	import ExtractedData from './ExtractedData.svelte';
 	import {
 		allFieldsPresent,
 		partialFields,
@@ -10,8 +10,8 @@
 	} from './_storybook/mock-data.js';
 
 	const { Story } = defineMeta({
-		title: 'Triage/RecognizedInputs',
-		component: RecognizedInputs,
+		title: 'Triage/ExtractedData',
+		component: ExtractedData,
 		tags: ['autodocs'],
 	});
 

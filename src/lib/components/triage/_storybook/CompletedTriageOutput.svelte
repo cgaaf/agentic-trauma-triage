@@ -1,6 +1,6 @@
 <script lang="ts">
 	import ReportDisplay from '../ReportDisplay.svelte';
-	import RecognizedInputs from '../RecognizedInputs.svelte';
+	import ExtractedData from '../ExtractedData.svelte';
 	import ActivationCard from '../ActivationCard.svelte';
 	import AdditionalCriteria from '../AdditionalCriteria.svelte';
 	import DisclaimerFooter from '../DisclaimerFooter.svelte';
@@ -40,7 +40,7 @@
 
 	<Separator />
 
-	<RecognizedInputs {fields} {warnings} {missingFieldWarnings} />
+	<ExtractedData {fields} {warnings} {missingFieldWarnings} />
 
 	<ActivationCard
 		level={activationLevel}
