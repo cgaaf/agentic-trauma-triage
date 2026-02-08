@@ -77,11 +77,11 @@
 			bind:ref={textareaRef}
 			bind:value
 			placeholder="Describe the patient, their vitals, and what happened..."
-			rows={4}
-			class="resize-none rounded-2xl border-none bg-transparent pb-14 text-base shadow-none focus-visible:border-transparent focus-visible:ring-0"
+			rows={1}
+			class="min-h-0 resize-none rounded-2xl border-none bg-transparent py-4 pr-14 text-base shadow-none focus-visible:border-transparent focus-visible:ring-0"
 			disabled={loading}
 		/>
-		<div class="absolute bottom-3 right-3">
+		<div class="absolute bottom-2 right-2">
 			<Button
 				size="icon"
 				class="rounded-full"
