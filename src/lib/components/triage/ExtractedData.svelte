@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { AlertTriangle } from '@lucide/svelte';
+	import { slide } from 'svelte/transition';
+	import { AlertTriangle, ChevronDown } from '@lucide/svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import type { ExtractedFields, PlausibilityWarning } from '$lib/types/index.js';
 
 	let {
@@ -60,6 +62,12 @@
 		if (getWarning(key)) return 'warning';
 		return 'present';
 	}
+
+	let contextExpanded = $state(false);
+
+	const hasAdditionalContext = $derived(
+		fields.additionalContext != null && fields.additionalContext.trim() !== ''
+	);
 </script>
 
 {#snippet chipBody(label: string, value: unknown, unit: string, state: ChipState)}
@@ -115,6 +123,26 @@
 			</div>
 		{/each}
 	</div>
+
+	<!-- Additional Context (progressive disclosure) -->
+	{#if hasAdditionalContext}
+		<div>
+			<Button
+				variant="ghost"
+				size="sm"
+				class="h-7 gap-1 px-2 text-xs text-muted-foreground"
+				onclick={() => (contextExpanded = !contextExpanded)}
+			>
+				<ChevronDown class="size-3 transition-transform {contextExpanded ? 'rotate-180' : ''}" />
+				Additional context
+			</Button>
+			{#if contextExpanded}
+				<div transition:slide={{ duration: 150 }} class="mt-1 px-3 py-1.5 {chipClasses.present}">
+					<span class="text-foreground font-mono text-sm leading-normal">{fields.additionalContext}</span>
+				</div>
+			{/if}
+		</div>
+	{/if}
 
 	<!-- Consolidated Warnings -->
 	{#if allWarnings.length > 0}

@@ -141,7 +141,7 @@ Runs in parallel with the deterministic engine. Uses Claude Sonnet 4.5 with `too
 - Hybrid confirmations (whether qualitative conditions are met)
 - Free-text `reasoning_narrative` explaining the evaluation logic
 
-**Confidence scores** are displayed to the user for LLM-evaluated criteria.
+**Confidence scores** are retained in the data model for potential future use but are not displayed in the UI.
 
 ### Phase 3: Merge
 
@@ -306,15 +306,17 @@ If the LLM fails after deterministic results are available, the `error` event in
 
 - **Primary input**: Large textarea for free-text EMS narrative
 - **Format**: Format-agnostic — accepts any writing style (MIST, SOAP, free-form narrative, etc.)
-- **Submission**: "Evaluate" button + Ctrl/Cmd+Enter keyboard shortcut
+- **Placeholder text**: "Describe the patient, their vitals, and what happened..."
+- **Submission**: Icon-only send button (circular, bottom-right of textarea) with screen-reader-accessible "Evaluate" label + Ctrl/Cmd+Enter keyboard shortcut. The chat-like input paradigm keeps the interface clean and modern.
 
-### Helper Text
+### Progressive Disclosure Helper
 
-Displayed above the textarea, listing the information needed:
+Two collapsible sections below the textarea provide guidance without cluttering the initial view:
 
-> **Required:** Age (triage will be rejected without it)
->
-> **For complete triage, include:** Systolic Blood Pressure (SBP), Heart Rate (HR), Respiratory Rate (RR), Glasgow Coma Scale (GCS), Airway status, Breathing status, Mechanism of injury, Injuries
+1. **"What to include"** — Badge chips listing: Age (marked required), SBP, HR, RR, GCS, Airway, Breathing, Mechanism, Injuries
+2. **"How does this work?"** — A 3-column icon grid explaining the pipeline phases (extraction, evaluation, results)
+
+Both sections are collapsed by default, reducing visual noise for experienced users while remaining discoverable for new users.
 
 ### Validation
 
@@ -328,7 +330,7 @@ Speech-to-text input via microphone is deferred to a future phase.
 
 ### No Example Reports
 
-No pre-built example reports or templates. The helper text provides sufficient guidance.
+No pre-built example reports or templates. The progressive disclosure helper provides sufficient guidance.
 
 ---
 
@@ -345,22 +347,30 @@ This highlights the parallel evaluation and gives the user useful information qu
 
 ### Progress Steps Indicator
 
-A multi-step progress indicator shown during processing:
+A 3-step progress indicator shown during processing:
 
 1. "Extracting details..." (Phase 1)
 2. "Evaluating vitals..." (Phase 2a)
 3. "Analyzing mechanism & injuries..." (Phase 2b)
-4. "Complete" (Phase 3)
 
-Each step shows: spinner (active), checkmark (done), or gray circle (pending).
+Each step shows: spinner (active), checkmark (done), or gray circle (pending). There is no explicit "Complete" step — instead, the progress steps auto-hide with a slide transition 1 second after the final phase completes. The ActivationCard appearing below serves as the clear completion signal.
 
-### Recognized Inputs
+### Extracted Data
 
-A checklist-style display of all expected fields:
+A two-zone display of all extracted fields using a three-state chip design:
 
-- **Extracted fields**: Green checkmark icon + value with unit label (e.g., "120 mmHg", "14 GCS")
-- **Missing fields**: Yellow warning icon + "Not provided"
-- **Plausibility warnings**: Amber inline warning for out-of-range values (e.g., "SBP 300 is outside normal clinical range"). The value is still used for triage — warnings are informational, not blocking.
+**Chip states:**
+- **Present**: Neutral muted border, bold monospace value + unit (e.g., `88 mmHg`, `12`)
+- **Warning**: Amber border + inline AlertTriangle icon (for out-of-range values)
+- **Missing**: Dashed border + em-dash (—)
+
+**Layout zones:**
+1. **Vital Signs** — 5 horizontal flex-wrap chips: Age, SBP, HR, RR, GCS
+2. **Clinical Details** — 2-column responsive grid (1 column on mobile): Airway, Breathing, Mechanism, Injuries
+
+**Additional Context** — When present, shown as a collapsible section below the clinical details grid (collapsed by default). Uses progressive disclosure to avoid cluttering the primary data view.
+
+**Plausibility warnings** and **missing field warnings** are consolidated into a single amber-bordered section below the extracted data. Warning chips also display an inline AlertTriangle icon for at-a-glance identification.
 
 Plausibility ranges:
 
@@ -370,63 +380,41 @@ Plausibility ranges:
 - RR: 0-80 breaths/min
 - GCS: 3-15
 
-### Criteria Matches
+### Criteria Matches — Two-Component Split
 
-Matched criteria displayed with a two-level grouping hierarchy:
+Matched criteria are displayed across two components that create a clear visual hierarchy:
 
-- **Header**: Activation level — large, color-coded (e.g., "LEVEL 1" in red)
-- **Subheader**: Category and age range (e.g., "Adult (16 - 64)")
+#### ActivationCard (Primary)
 
-```
-LEVEL 1                          ← header (large, color-coded)
-  Adult (16 - 64)                ← subheader (smaller)
-    • GCS < 12 — GCS = 8 < 12
-    • SBP < 90 — SBP = 75 < 90
+A prominent, color-coded card showing **only the winning activation level** and its matched criteria:
 
-LEVEL 2                          ← header (large, color-coded)
-  Adult (16 - 64)                ← subheader
-    • GCS == 12 or 13 — GCS = 12
-```
+| Level           | Color  | Label              |
+| --------------- | ------ | ------------------ |
+| Level 1         | Red    | "LEVEL 1"          |
+| Level 2         | Orange | "LEVEL 2"          |
+| Level 3         | Yellow | "LEVEL 3"          |
+| Standard Triage | Gray   | "STANDARD TRIAGE"  |
 
-For boundary-age patients (e.g., a 16-year-old matching both Adult and Pediatric criteria), multiple subheaders appear:
+The card includes:
+- Level name in large, bold monospace text
+- Category and age range labels (e.g., "Adult (≥15 years)")
+- Criteria count
+- List of matched criteria descriptions in a bordered sub-section
 
-```
-LEVEL 1
-  Adult (16 - 64)
-    • GCS < 12 — GCS = 8 < 12
-LEVEL 3
-  Pediatric (0 - 17)
-    • Ejection from automobile — ...
-```
+**Progressive disclosure:** A "Show details" toggle reveals:
+- Trigger reasons for each criterion (what caused the match)
+- Justification summary explaining why this level was recommended
+- Agent reasoning showing the LLM's step-by-step evaluation logic
 
-Each matched criterion shows:
+This consolidation of justification and agent reasoning into a single expand section reduces interaction complexity compared to multiple separate expanders.
 
-- Description text
-- What triggered it (e.g., "GCS = 8 < 12" or "Penetrating wound to chest described in report")
-- Confidence score (for LLM-evaluated criteria only, 0-1)
-- Source indicator (deterministic vs. LLM)
+#### AdditionalCriteria (Secondary)
 
-### Activation Level Card
-
-A prominent, color-coded card showing the recommended activation level:
-
-| Level           | Color  | Label                                          |
-| --------------- | ------ | ---------------------------------------------- |
-| Level 1         | Red    | "LEVEL 1 — Critical Activation"                |
-| Level 2         | Orange | "LEVEL 2 — High-Priority Activation"           |
-| Level 3         | Yellow | "LEVEL 3 — Moderate Activation"                |
-| Standard Triage | Gray   | "STANDARD TRIAGE — No Activation Criteria Met" |
-
-The card includes a justification summary explaining why this level was recommended.
-
-### Agent Reasoning
-
-An expandable section (collapsed by default) showing the LLM's step-by-step evaluation reasoning. Provides transparency into how mechanism/injury criteria were assessed.
+A secondary, dashed-border card showing all **other matched criteria** from levels below the winning level. Grouped by activation level. Only rendered when additional matches exist.
 
 ### Warnings
 
-- **Inline per-section warnings**: Each results section shows contextual warnings if relevant inputs were missing (e.g., "Without SBP, blood pressure criteria cannot be fully evaluated")
-- **No top-level banner**: Warnings are contextual, not global
+All plausibility warnings and missing-field warnings are consolidated in the Extracted Data section. This avoids repetition across multiple sections while the inline AlertTriangle icons on individual chips provide at-a-glance field-level indication.
 
 ### Disclaimer
 
@@ -444,19 +432,22 @@ Minimal footer text: _"This is a decision-support tool. Clinical judgment should
 
 ### Initial State
 
-Before any triage is submitted, the page shows a **welcome/instructional view** explaining:
+Before any triage is submitted, the page shows a minimal, centered layout:
 
-- What the tool does
-- How to use it
-- What information to include in the report
+- **"Enter your report."** heading as a clear call to action
+- The textarea input with placeholder text
+- Collapsible helper sections below (see Section 6)
+
+This avoids overwhelming first-time users while keeping all guidance accessible via progressive disclosure.
 
 ### Header
 
 Minimal header bar containing:
 
 - **App name**: "Trauma Triage Agent"
+- **New Triage button**: Stethoscope icon + "New Triage" label, appears only after triage completes (see New Triage Behavior)
 - **Dark mode toggle**: Sun/moon icon (using mode-watcher)
-- **History button**: Clock icon that opens a drawer (future phase)
+- **History button**: Clock icon that opens a drawer (future phase — not currently displayed)
 - **Mock mode indicator**: Purple badge showing "MOCK MODE" when active
 
 ### Visual Tone
@@ -466,7 +457,7 @@ Minimal header bar containing:
 - Bold colors for activation levels
 - Large text for critical information (activation level uses extra-large, heavy font weight)
 - High contrast ratios
-- Thick colored left borders on activation cards
+- Full colored borders on activation cards (uniform border on all sides)
 - Clear visual hierarchy
 
 ### Responsive Design
@@ -483,10 +474,13 @@ Both light and dark modes supported with a toggle. Uses mode-watcher (already in
 
 ### New Triage Behavior
 
-When a user submits a new triage while results from a previous one are visible:
+After triage completes, a "New Triage" button (with stethoscope icon) appears in the header bar, always visible regardless of scroll position. Clicking it:
 
-- New results replace the old ones immediately
-- Previous results are auto-saved to browser history (future phase)
+1. Resets the triage state to idle
+2. Clears the report text
+3. Returns the user to the centered input view
+
+The button is only visible when a triage is complete (not during processing or on the idle screen). Previous results are discarded (auto-save to browser history is a future phase feature).
 
 ### Accessibility
 
@@ -610,9 +604,9 @@ description: string
 activationLevel: 'Level 1' | 'Level 2' | 'Level 3'
 category: 'Adult' | 'Pediatric' | 'Geriatric'  // For display grouping (subheader)
 ageRangeLabel: string           // For display grouping (e.g., "16 - 64")
-source: 'deterministic' | 'llm'
-confidence?: number             // 0-1, LLM-sourced only
-triggerReason: string           // e.g., "GCS = 8 < 12"
+source: 'deterministic' | 'llm' // Present in data model but not displayed in UI
+confidence?: number             // 0-1, LLM-sourced only; present in data model but not displayed in UI
+triggerReason: string           // e.g., "GCS = 8 < 12"; shown via progressive disclosure toggle
 ```
 
 ### EvaluationResult (Phase 3 output / final result)

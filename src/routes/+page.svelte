@@ -46,6 +46,13 @@
 			triageState.submitReport(triageState.report);
 		}
 	}
+
+	function handleNewTriage() {
+		triageState.reset();
+		reportValue = '';
+		reportExpanded = false;
+		showProgressSteps = true;
+	}
 </script>
 
 <svelte:head>
@@ -53,7 +60,7 @@
 </svelte:head>
 
 <div class="flex min-h-screen flex-col">
-	<Header mockMode={data.mockMode} />
+	<Header mockMode={data.mockMode} showNewTriage={triageState.phase === 'complete'} onNewTriage={handleNewTriage} />
 
 	<main
 		class="mx-auto w-full max-w-4xl flex-1 px-4 py-6 {triageState.phase === 'idle'
