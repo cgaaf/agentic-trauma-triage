@@ -33,8 +33,8 @@
 	] as const;
 
 	const chipClasses: Record<string, string> = {
-		present: 'rounded-md border border-green-500/40 bg-green-500/5 dark:border-green-500/30 dark:bg-green-500/8',
-		warning: 'rounded-md border border-amber-500/50 bg-amber-500/8 dark:border-amber-500/40 dark:bg-amber-500/10',
+		present: 'rounded-md border border-muted-foreground/20 bg-muted/30 dark:border-muted-foreground/25',
+		warning: 'rounded-md border border-amber-500/50 bg-muted/30 dark:border-amber-500/40',
 		missing: 'rounded-md border border-dashed border-muted-foreground/20 bg-muted/30 dark:border-muted-foreground/25',
 	};
 
@@ -105,7 +105,7 @@
 						<span class="text-muted-foreground text-sm leading-snug">&mdash;</span>
 					{:else}
 						<div class="flex items-start gap-1">
-							<span class="text-foreground text-sm leading-snug">{formatClinical(value)}</span>
+							<span class="text-foreground text-sm font-medium leading-normal">{formatClinical(value)}</span>
 							{#if state === 'warning'}
 								<AlertTriangle class="mt-0.5 size-3 shrink-0 text-amber-500" />
 							{/if}
@@ -118,7 +118,7 @@
 
 	<!-- Consolidated Warnings -->
 	{#if allWarnings.length > 0}
-		<div class="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 dark:bg-amber-500/8">
+		<div class="space-y-1 rounded-md border border-amber-500/30 px-3 py-2">
 			{#each allWarnings as message (message)}
 				<div class="flex items-start gap-1.5">
 					<AlertTriangle class="mt-0.5 size-3 shrink-0 text-amber-500" />
