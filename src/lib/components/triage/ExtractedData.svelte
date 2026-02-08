@@ -112,11 +112,11 @@
 
 	<!-- Consolidated Warnings -->
 	{#if allWarnings.length > 0}
-		<div class="space-y-1">
+		<div class="space-y-1 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 dark:bg-amber-500/8">
 			{#each allWarnings as message (message)}
 				<div class="flex items-start gap-1.5">
 					<AlertTriangle class="mt-0.5 size-3 shrink-0 text-amber-500" />
-					<p class="text-xs text-amber-600 dark:text-amber-400">{message}</p>
+					<span class="text-xs text-amber-600 dark:text-amber-400">{message}</span>
 				</div>
 			{/each}
 		</div>
