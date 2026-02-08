@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, AlertTriangle } from '@lucide/svelte';
+	import { AlertTriangle } from '@lucide/svelte';
 	import type { ExtractedFields, PlausibilityWarning } from '$lib/types/index.js';
 
 	let {
@@ -100,24 +100,17 @@
 	{/if}
 
 	<!-- Clinical Details — 2-column grid on md: -->
-	<div class="grid grid-cols-1 gap-x-4 gap-y-1 md:grid-cols-2">
+	<div class="grid grid-cols-1 gap-x-4 gap-y-1.5 md:grid-cols-2">
 		{#each clinicalDefs as { key, label } (key)}
 			{@const value = fields[key as keyof ExtractedFields]}
 			{@const present = isPresent(value)}
-			<div class="flex items-start gap-1.5">
+			<div>
+				<span class="text-muted-foreground text-xs">{label}</span>
 				{#if present}
-					<Check class="mt-0.5 size-3.5 shrink-0 text-green-600 dark:text-green-400" />
+					<p class="text-sm">{formatClinical(value)}</p>
 				{:else}
-					<AlertTriangle class="mt-0.5 size-3.5 shrink-0 text-muted-foreground/60" />
+					<p class="text-muted-foreground text-sm italic">Not provided</p>
 				{/if}
-				<p class="text-sm">
-					<span class="text-muted-foreground">{label}:</span>
-					{#if present}
-						<span>{formatClinical(value)}</span>
-					{:else}
-						<span class="text-muted-foreground italic">Not provided</span>
-					{/if}
-				</p>
 			</div>
 		{/each}
 	</div>
