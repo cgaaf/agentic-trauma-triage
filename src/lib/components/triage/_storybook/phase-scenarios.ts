@@ -99,8 +99,7 @@ export const level1MvcScenario: PhaseScenario = {
 
 export const geriatricLevel2Scenario: PhaseScenario = {
   name: "Level 2 — Geriatric Fall",
-  description:
-    "Geriatric patient with ground-level fall, hip fracture, and anticoagulant use.",
+  description: "Geriatric patient with ground-level fall, hip fracture, and anticoagulant use.",
   steps: [
     {
       label: "Idle — awaiting report",
@@ -143,8 +142,7 @@ export const geriatricLevel2Scenario: PhaseScenario = {
 
 export const standardTriageScenario: PhaseScenario = {
   name: "Standard Triage — No Activation",
-  description:
-    "Minor injury with no trauma activation criteria met.",
+  description: "Minor injury with no trauma activation criteria met.",
   steps: [
     {
       label: "Idle — awaiting report",
