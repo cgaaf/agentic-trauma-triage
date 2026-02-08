@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { SendHorizonal } from '@lucide/svelte';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
+	import { SendHorizonal, ChevronDown, ClipboardList, Stethoscope, Zap } from '@lucide/svelte';
 
 	let {
 		value = $bindable(''),
@@ -12,6 +14,9 @@
 		loading?: boolean;
 		onsubmit?: (report: string) => void;
 	} = $props();
+
+	let whatToIncludeOpen = $state(false);
+	let howItWorksOpen = $state(false);
 
 	function handleSubmit() {
 		if (value.trim() && onsubmit) {
@@ -27,36 +32,101 @@
 	}
 </script>
 
-<div class="space-y-3">
-	<div class="text-sm text-muted-foreground space-y-1">
-		<p><strong class="text-foreground">Required:</strong> Age (triage will be rejected without it)</p>
-		<p>
-			<strong class="text-foreground">For complete triage, include:</strong> Systolic Blood Pressure (SBP),
-			Heart Rate (HR), Respiratory Rate (RR), Glasgow Coma Scale (GCS), Airway status, Breathing
-			status, Mechanism of injury, Injuries
-		</p>
-	</div>
-
+<div class="w-full space-y-3">
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div onkeydown={handleKeydown} role="form">
+	<div
+		class="relative rounded-2xl bg-muted/50 shadow-sm transition-shadow focus-within:shadow-md dark:bg-muted/30"
+		onkeydown={handleKeydown}
+		role="form"
+	>
 		<Textarea
 			bind:value
-			placeholder="Enter EMS trauma report..."
-			rows={6}
-			class="resize-y text-base"
+			placeholder="Describe the patient, their vitals, and what happened..."
+			rows={4}
+			class="resize-none rounded-2xl border-none bg-transparent pb-14 text-base shadow-none focus-visible:border-transparent focus-visible:ring-0"
 			disabled={loading}
 		/>
+		<div class="absolute bottom-3 right-3">
+			<Button
+				size="icon"
+				class="rounded-full"
+				onclick={handleSubmit}
+				disabled={loading || !value.trim()}
+			>
+				<SendHorizonal class="size-4" />
+				<span class="sr-only">Evaluate</span>
+			</Button>
+		</div>
 	</div>
 
-	<div class="flex items-center justify-between">
-		<p class="text-xs text-muted-foreground">
-			Press <kbd class="rounded border bg-muted px-1.5 py-0.5 text-xs">Ctrl</kbd>+<kbd
-				class="rounded border bg-muted px-1.5 py-0.5 text-xs">Enter</kbd
-			> to submit
-		</p>
-		<Button onclick={handleSubmit} disabled={loading || !value.trim()}>
-			<SendHorizonal class="size-4" />
-			Evaluate
-		</Button>
+	<div class="flex justify-center gap-3">
+		<Collapsible.Root bind:open={whatToIncludeOpen}>
+			<Collapsible.Trigger
+				class="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+			>
+				What to include
+				<ChevronDown
+					class="size-3 transition-transform duration-200 {whatToIncludeOpen ? 'rotate-180' : ''}"
+				/>
+			</Collapsible.Trigger>
+		</Collapsible.Root>
+
+		<Collapsible.Root bind:open={howItWorksOpen}>
+			<Collapsible.Trigger
+				class="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+			>
+				How does this work?
+				<ChevronDown
+					class="size-3 transition-transform duration-200 {howItWorksOpen ? 'rotate-180' : ''}"
+				/>
+			</Collapsible.Trigger>
+		</Collapsible.Root>
 	</div>
+
+	{#if whatToIncludeOpen}
+		<div class="mt-1 flex flex-wrap justify-center gap-2">
+			<Badge variant="secondary">Age *</Badge>
+			<Badge variant="outline">SBP</Badge>
+			<Badge variant="outline">HR</Badge>
+			<Badge variant="outline">RR</Badge>
+			<Badge variant="outline">GCS</Badge>
+			<Badge variant="outline">Mechanism</Badge>
+			<Badge variant="outline">Injuries</Badge>
+		</div>
+		<p class="mt-2 text-center text-xs text-muted-foreground">
+			* Age is required. More fields lead to a more complete evaluation.
+		</p>
+	{/if}
+
+	{#if howItWorksOpen}
+		<div class="mt-3 grid gap-4 sm:grid-cols-3">
+			<div class="flex flex-col items-center gap-2 text-center">
+				<div class="flex size-10 items-center justify-center rounded-full bg-muted">
+					<ClipboardList class="size-5 text-muted-foreground" />
+				</div>
+				<p class="text-sm font-medium">Extract</p>
+				<p class="text-xs text-muted-foreground">
+					Clinical fields are extracted from your narrative
+				</p>
+			</div>
+			<div class="flex flex-col items-center gap-2 text-center">
+				<div class="flex size-10 items-center justify-center rounded-full bg-muted">
+					<Stethoscope class="size-5 text-muted-foreground" />
+				</div>
+				<p class="text-sm font-medium">Evaluate</p>
+				<p class="text-xs text-muted-foreground">
+					137 criteria are checked against the patient data
+				</p>
+			</div>
+			<div class="flex flex-col items-center gap-2 text-center">
+				<div class="flex size-10 items-center justify-center rounded-full bg-muted">
+					<Zap class="size-5 text-muted-foreground" />
+				</div>
+				<p class="text-sm font-medium">Activate</p>
+				<p class="text-xs text-muted-foreground">
+					A recommended trauma activation level is determined
+				</p>
+			</div>
+		</div>
+	{/if}
 </div>

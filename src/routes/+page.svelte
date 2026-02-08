@@ -3,7 +3,6 @@
 	import Header from '$lib/components/triage/Header.svelte';
 	import ReportInput from '$lib/components/triage/ReportInput.svelte';
 	import ReportDisplay from '$lib/components/triage/ReportDisplay.svelte';
-	import WelcomeView from '$lib/components/triage/WelcomeView.svelte';
 	import ProgressSteps from '$lib/components/triage/ProgressSteps.svelte';
 	import ExtractedData from '$lib/components/triage/ExtractedData.svelte';
 	import AdditionalCriteria from '$lib/components/triage/AdditionalCriteria.svelte';
@@ -48,26 +47,32 @@
 <div class="flex min-h-screen flex-col">
 	<Header mockMode={data.mockMode} />
 
-	<main class="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-6">
+	<main
+		class="mx-auto w-full max-w-4xl flex-1 px-4 py-6 {triageState.phase === 'idle'
+			? 'flex flex-col items-center justify-center'
+			: 'space-y-6'}"
+	>
 		<!-- Input Section -->
 		{#if triageState.phase === 'complete'}
 			<div transition:slide={{ duration: 300 }}>
 				<ReportDisplay text={reportValue} />
 			</div>
 		{:else}
-			<div transition:slide={{ duration: 300 }}>
+			<div class={triageState.phase === 'idle' ? 'w-full max-w-2xl' : ''} transition:slide={{ duration: 300 }}>
+				{#if triageState.phase === 'idle'}
+					<h1 class="mb-6 text-center text-3xl font-semibold tracking-tight text-foreground">
+						Enter your report.
+					</h1>
+				{/if}
 				<ReportInput bind:value={reportValue} loading={triageState.isLoading} onsubmit={handleSubmit} />
 			</div>
 		{/if}
 
-		<div
-			class="h-px w-full"
-			style="background-image: repeating-linear-gradient(90deg, var(--border) 0 6px, transparent 6px 12px)"
-		></div>
-
-		<!-- Welcome / Idle State -->
-		{#if triageState.phase === 'idle'}
-			<WelcomeView />
+		{#if triageState.phase !== 'idle'}
+			<div
+				class="h-px w-full"
+				style="background-image: repeating-linear-gradient(90deg, var(--border) 0 6px, transparent 6px 12px)"
+			></div>
 		{/if}
 
 		<!-- Progress Steps -->
