@@ -3,6 +3,7 @@
 	import { slide } from 'svelte/transition';
 	import { triageState } from '$lib/state/triage.svelte.js';
 
+	import Header from '../Header.svelte';
 	import ReportInput from '../ReportInput.svelte';
 	import ReportDisplay from '../ReportDisplay.svelte';
 	import ProgressSteps from '../ProgressSteps.svelte';
@@ -103,8 +104,10 @@
 	</div>
 </div>
 
-<!-- Page Content (replica of +page.svelte lines 63-143) -->
+<!-- Page Content (replica of +page.svelte) -->
 <div class="flex min-h-[calc(100vh-57px)] flex-col">
+	<Header showNewTriage={triageState.phase === 'complete'} onNewTriage={resetSteps} />
+
 	<main
 		class="mx-auto w-full max-w-4xl flex-1 px-4 py-6 {triageState.phase === 'idle'
 			? 'flex flex-col items-center justify-center'

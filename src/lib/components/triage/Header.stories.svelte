@@ -12,3 +12,7 @@
 <Story name="Default" args={{ mockMode: false }} />
 
 <Story name="MockMode" args={{ mockMode: true }} />
+
+<Story name="NewTriage" args={{ showNewTriage: true, onNewTriage: () => {} }} />
+
+<Story name="MockModeWithNewTriage" args={{ mockMode: true, showNewTriage: true, onNewTriage: () => {} }} />
