@@ -2,6 +2,7 @@
 	import { slide } from 'svelte/transition';
 	import Header from '$lib/components/triage/Header.svelte';
 	import ReportInput from '$lib/components/triage/ReportInput.svelte';
+	import ReportDisplay from '$lib/components/triage/ReportDisplay.svelte';
 	import WelcomeView from '$lib/components/triage/WelcomeView.svelte';
 	import ProgressSteps from '$lib/components/triage/ProgressSteps.svelte';
 	import RecognizedInputs from '$lib/components/triage/RecognizedInputs.svelte';
@@ -49,7 +50,15 @@
 
 	<main class="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-6">
 		<!-- Input Section -->
-		<ReportInput bind:value={reportValue} loading={triageState.isLoading} onsubmit={handleSubmit} collapsed={triageState.phase === 'complete'} />
+		{#if triageState.phase === 'complete'}
+			<div transition:slide={{ duration: 300 }}>
+				<ReportDisplay text={reportValue} />
+			</div>
+		{:else}
+			<div transition:slide={{ duration: 300 }}>
+				<ReportInput bind:value={reportValue} loading={triageState.isLoading} onsubmit={handleSubmit} />
+			</div>
+		{/if}
 
 		<Separator />
 

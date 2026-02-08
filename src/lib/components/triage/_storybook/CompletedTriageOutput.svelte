@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ReportInput from '../ReportInput.svelte';
+	import ReportDisplay from '../ReportDisplay.svelte';
 	import RecognizedInputs from '../RecognizedInputs.svelte';
 	import ActivationCard from '../ActivationCard.svelte';
 	import CriteriaMatches from '../CriteriaMatches.svelte';
@@ -22,7 +22,6 @@
 		otherMatches = [],
 		justification,
 		agentReasoning,
-		onsubmit,
 	}: {
 		report: string;
 		fields: ExtractedFields;
@@ -33,12 +32,11 @@
 		otherMatches?: CriterionMatch[];
 		justification: string;
 		agentReasoning?: string;
-		onsubmit?: (report: string) => void;
 	} = $props();
 </script>
 
 <div class="mx-auto w-full max-w-4xl space-y-6 px-4 py-6">
-	<ReportInput value={report} loading={false} collapsed={true} {onsubmit} />
+	<ReportDisplay text={report} />
 
 	<Separator />
 
