@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
-	import { FileText, ChevronDown } from '@lucide/svelte';
+	import { ChevronDown } from '@lucide/svelte';
 
 	let { text }: { text: string } = $props();
 
@@ -38,14 +38,10 @@
 		aria-expanded={expanded}
 		onclick={toggle}
 	>
-		<FileText class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-		{#if expanded}
-			<span class="flex-1 whitespace-pre-wrap text-sm text-muted-foreground">{text}</span>
-		{:else}
-			<span class="flex-1 truncate text-sm text-muted-foreground">
-				{text.length > 80 ? text.slice(0, 80) + '...' : text}
-			</span>
-		{/if}
+		<span
+			class="flex-1 text-sm text-muted-foreground {expanded ? 'whitespace-pre-wrap' : 'truncate'}"
+			>{text}</span
+		>
 		<ChevronDown
 			class="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200 {expanded ? 'rotate-180' : ''}"
 		/>
