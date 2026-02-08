@@ -360,11 +360,13 @@ Each step shows: spinner (active), checkmark (done), or gray circle (pending). T
 A two-zone display of all extracted fields using a three-state chip design:
 
 **Chip states:**
+
 - **Present**: Neutral muted border, bold monospace value + unit (e.g., `88 mmHg`, `12`)
 - **Warning**: Amber border + inline AlertTriangle icon (for out-of-range values)
 - **Missing**: Dashed border + em-dash (—)
 
 **Layout zones:**
+
 1. **Vital Signs** — 5 horizontal flex-wrap chips: Age, SBP, HR, RR, GCS
 2. **Clinical Details** — 2-column responsive grid (1 column on mobile): Airway, Breathing, Mechanism, Injuries
 
@@ -388,20 +390,22 @@ Matched criteria are displayed across two components that create a clear visual 
 
 A prominent, color-coded card showing **only the winning activation level** and its matched criteria:
 
-| Level           | Color  | Label              |
-| --------------- | ------ | ------------------ |
-| Level 1         | Red    | "LEVEL 1"          |
-| Level 2         | Orange | "LEVEL 2"          |
-| Level 3         | Yellow | "LEVEL 3"          |
-| Standard Triage | Gray   | "STANDARD TRIAGE"  |
+| Level           | Color  | Label             |
+| --------------- | ------ | ----------------- |
+| Level 1         | Red    | "LEVEL 1"         |
+| Level 2         | Orange | "LEVEL 2"         |
+| Level 3         | Yellow | "LEVEL 3"         |
+| Standard Triage | Gray   | "STANDARD TRIAGE" |
 
 The card includes:
+
 - Level name in large, bold monospace text
 - Category and age range labels (e.g., "Adult (≥15 years)")
 - Criteria count
 - List of matched criteria descriptions in a bordered sub-section
 
 **Progressive disclosure:** A "Show details" toggle reveals:
+
 - Trigger reasons for each criterion (what caused the match)
 - Justification summary explaining why this level was recommended
 - Agent reasoning showing the LLM's step-by-step evaluation logic

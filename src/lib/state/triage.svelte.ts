@@ -2,7 +2,6 @@ import type {
   ExtractedFields,
   PlausibilityWarning,
   CriterionMatch,
-  EvaluationResult,
   FinalActivationLevel,
   SSEEvent,
 } from "$lib/types/index.js";

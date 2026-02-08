@@ -1,4 +1,4 @@
-import type { SSEEvent, ExtractedFields, CriterionMatch, Criterion } from "$lib/types/index.js";
+import type { SSEEvent, ExtractedFields, CriterionMatch } from "$lib/types/index.js";
 import { CRITERIA } from "$lib/server/criteria/criteria.js";
 import { filterCriteriaByAge } from "$lib/server/engine/age-filter.js";
 import { evaluateDeterministic } from "$lib/server/engine/deterministic.js";

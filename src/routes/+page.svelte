@@ -35,11 +35,6 @@
 	$effect(() => {
 		if (triageState.activationLevel) {
 			reportExpanded = false;
-		}
-	});
-
-	$effect(() => {
-		if (triageState.activationLevel) {
 			tick().then(() => {
 				activationCardEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 			});
