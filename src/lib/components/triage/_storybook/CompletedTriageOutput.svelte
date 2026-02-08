@@ -2,7 +2,7 @@
 	import ReportDisplay from '../ReportDisplay.svelte';
 	import RecognizedInputs from '../RecognizedInputs.svelte';
 	import ActivationCard from '../ActivationCard.svelte';
-	import CriteriaMatches from '../CriteriaMatches.svelte';
+	import AdditionalCriteria from '../AdditionalCriteria.svelte';
 	import DisclaimerFooter from '../DisclaimerFooter.svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import type {
@@ -50,7 +50,7 @@
 	/>
 
 	{#if otherMatches.length > 0}
-		<CriteriaMatches matches={otherMatches} />
+		<AdditionalCriteria matches={otherMatches} />
 	{/if}
 
 	<DisclaimerFooter />

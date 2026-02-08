@@ -1,7 +1,7 @@
 <script module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 	import { userEvent } from 'storybook/test';
-	import CriteriaMatches from './CriteriaMatches.svelte';
+	import AdditionalCriteria from './AdditionalCriteria.svelte';
 	import {
 		singleLevel1Matches,
 		mixedLevelMatches,
@@ -10,8 +10,8 @@
 	} from './_storybook/mock-data.js';
 
 	const { Story } = defineMeta({
-		title: 'Triage/CriteriaMatches',
-		component: CriteriaMatches,
+		title: 'Triage/AdditionalCriteria',
+		component: AdditionalCriteria,
 		tags: ['autodocs'],
 	});
 </script>
@@ -30,8 +30,8 @@
 	name="MixedLevelsExpanded"
 	args={{ matches: mixedLevelMatches }}
 	play={async ({ canvasElement }) => {
-		const buttons = canvasElement.querySelectorAll('button');
-		for (const button of buttons) {
+		const button = canvasElement.querySelector('button');
+		if (button) {
 			await userEvent.click(button);
 		}
 	}}

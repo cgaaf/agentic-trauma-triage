@@ -6,7 +6,7 @@
 	import WelcomeView from '$lib/components/triage/WelcomeView.svelte';
 	import ProgressSteps from '$lib/components/triage/ProgressSteps.svelte';
 	import RecognizedInputs from '$lib/components/triage/RecognizedInputs.svelte';
-	import CriteriaMatches from '$lib/components/triage/CriteriaMatches.svelte';
+	import AdditionalCriteria from '$lib/components/triage/AdditionalCriteria.svelte';
 	import ActivationCard from '$lib/components/triage/ActivationCard.svelte';
 	import DisclaimerFooter from '$lib/components/triage/DisclaimerFooter.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '$lib/components/ui/alert/index.js';
@@ -115,10 +115,10 @@
 		{#if triageState.allMatches.length > 0}
 			{@const otherMatches = triageState.allMatches.filter(m => m.activationLevel !== triageState.activationLevel)}
 			{#if otherMatches.length > 0}
-				<CriteriaMatches matches={otherMatches} />
+				<AdditionalCriteria matches={otherMatches} />
 			{/if}
 		{:else if triageState.deterministicMatches.length > 0}
-			<CriteriaMatches matches={triageState.deterministicMatches} />
+			<AdditionalCriteria matches={triageState.deterministicMatches} />
 		{/if}
 
 		<!-- Disclaimer -->
