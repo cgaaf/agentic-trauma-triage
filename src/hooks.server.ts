@@ -57,7 +57,8 @@ function getLimiter(): RateLimiter {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
-  if (event.url.pathname === "/api/triage" && event.request.method === "POST") {
+  const rateLimitedPaths = ["/api/triage", "/api/transcribe"];
+  if (rateLimitedPaths.includes(event.url.pathname) && event.request.method === "POST") {
     let ip: string;
     try {
       ip = event.getClientAddress();

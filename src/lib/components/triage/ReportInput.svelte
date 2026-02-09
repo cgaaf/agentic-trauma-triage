@@ -12,8 +12,11 @@
 		Stethoscope,
 		Zap,
 		Sparkles,
+		Mic,
+		Loader2,
 	} from '@lucide/svelte';
 	import { exampleReports } from '$lib/data/example-reports.js';
+	import { AudioRecorder } from '$lib/audio/recorder.svelte.js';
 
 	let {
 		value = $bindable(''),
@@ -29,7 +32,13 @@
 	let whatToIncludeOpen = $state(false);
 	let howItWorksOpen = $state(false);
 
-	const showExamples = $derived(!value.trim() && !loading);
+	const recorder = new AudioRecorder();
+
+	recorder.onAutoStop = () => {
+		transcribeAndSubmit();
+	};
+
+	const showExamples = $derived(!value.trim() && !loading && recorder.isIdle);
 
 	async function selectExample(text: string) {
 		const el = textareaRef;
@@ -64,6 +73,46 @@
 			handleSubmit();
 		}
 	}
+
+	async function transcribeAndSubmit() {
+		recorder.stop();
+		const blob = recorder.getBlob();
+		recorder.setTranscribing();
+
+		try {
+			const form = new FormData();
+			form.append('audio', blob, 'recording.webm');
+
+			const res = await fetch('/api/transcribe', {
+				method: 'POST',
+				body: form,
+			});
+
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({ error: 'Transcription failed' }));
+				throw new Error(body.error ?? `Transcription failed (${res.status})`);
+			}
+
+			const { text } = await res.json();
+			value = text;
+			recorder.reset();
+			await tick();
+			handleSubmit();
+		} catch (err) {
+			recorder.error = err instanceof Error ? err.message : 'Transcription failed';
+			recorder.reset();
+		}
+	}
+
+	function formatDuration(seconds: number): string {
+		const m = Math.floor(seconds / 60);
+		const s = seconds % 60;
+		return `${m}:${String(s).padStart(2, '0')}`;
+	}
+
+	$effect(() => {
+		return () => recorder.destroy();
+	});
 </script>
 
 <div class="w-full space-y-3">
@@ -79,20 +128,55 @@
 			placeholder="Describe the patient, their vitals, and what happened..."
 			rows={1}
 			class="min-h-0 resize-none rounded-2xl border-none bg-transparent pt-4 pb-14 text-base shadow-none focus-visible:border-transparent focus-visible:ring-0"
-			disabled={loading}
+			disabled={loading || !recorder.isIdle}
 		/>
-		<div class="absolute bottom-3 right-3">
-			<Button
-				size="icon"
-				class="rounded-full"
-				onclick={handleSubmit}
-				disabled={loading || !value.trim()}
-			>
-				<SendHorizonal class="size-4" />
-				<span class="sr-only">Evaluate</span>
-			</Button>
+		<div class="absolute bottom-3 right-3 flex items-center gap-2">
+			{#if recorder.isRecording}
+				<span class="font-mono text-sm tabular-nums text-destructive">
+					{formatDuration(recorder.duration)}
+				</span>
+				<Button
+					size="icon"
+					variant="destructive"
+					class="animate-pulse rounded-full"
+					onclick={transcribeAndSubmit}
+				>
+					<Mic class="size-4" />
+					<span class="sr-only">Stop recording</span>
+				</Button>
+			{:else if recorder.isTranscribing}
+				<Button size="icon" class="rounded-full" disabled>
+					<Loader2 class="size-4 animate-spin" />
+					<span class="sr-only">Transcribing</span>
+				</Button>
+			{:else if value.trim()}
+				<Button
+					size="icon"
+					class="rounded-full"
+					onclick={handleSubmit}
+					disabled={loading}
+				>
+					<SendHorizonal class="size-4" />
+					<span class="sr-only">Evaluate</span>
+				</Button>
+			{:else}
+				<Button
+					size="icon"
+					variant="outline"
+					class="rounded-full"
+					onclick={() => recorder.start()}
+					disabled={loading}
+				>
+					<Mic class="size-4" />
+					<span class="sr-only">Record audio</span>
+				</Button>
+			{/if}
 		</div>
 	</div>
+
+	{#if recorder.error}
+		<p class="text-sm text-destructive">{recorder.error}</p>
+	{/if}
 
 	{#if showExamples}
 		<div class="flex flex-wrap items-center justify-center gap-2" transition:slide={{ duration: 200 }}>

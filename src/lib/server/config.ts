@@ -6,3 +6,10 @@ export function isMockMode(): boolean {
   const key = env.ANTHROPIC_API_KEY;
   return !key || key === "" || key === "sk-placeholder" || key === "your-api-key-here";
 }
+
+/** Returns true when OpenAI transcription should use mock responses. */
+export function isOpenAIMockMode(): boolean {
+  if (env.MOCK_MODE === "true") return true;
+  const key = env.OPENAI_API_KEY;
+  return !key || key === "" || key === "sk-placeholder" || key === "your-api-key-here";
+}
