@@ -85,9 +85,14 @@
 	parameters={{ test: { timeout: 15_000 } }}
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		mockTranscriptionAPIs();
-		const micButton = canvas.getByRole('button', { name: 'Record audio' });
-		await userEvent.click(micButton);
+		const cleanup = mockTranscriptionAPIs();
+		try {
+			const micButton = canvas.getByRole('button', { name: 'Record audio' });
+			await userEvent.click(micButton);
+			await canvas.findByRole('button', { name: 'Stop recording' });
+		} finally {
+			cleanup();
+		}
 	}}
 />
 
@@ -124,10 +129,14 @@
 	args={{ value: '', loading: false }}
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		mockTranscriptionAPIs({ rejectMic: true });
-		const micButton = canvas.getByRole('button', { name: 'Record audio' });
-		await userEvent.click(micButton);
-		const errorText = await canvas.findByText(/microphone access denied/i);
-		await expect(errorText).toBeInTheDocument();
+		const cleanup = mockTranscriptionAPIs({ rejectMic: true });
+		try {
+			const micButton = canvas.getByRole('button', { name: 'Record audio' });
+			await userEvent.click(micButton);
+			const errorText = await canvas.findByText(/microphone access denied/i);
+			await expect(errorText).toBeInTheDocument();
+		} finally {
+			cleanup();
+		}
 	}}
 />

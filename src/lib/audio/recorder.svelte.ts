@@ -5,6 +5,7 @@ export type RecorderState = "idle" | "connecting" | "recording";
 export const MAX_DURATION_S =
   Number(env.PUBLIC_MAX_RECORDING_DURATION_S) || 30;
 const SILENCE_TIMEOUT_MS = 5_000;
+const LIVE_COMMIT_INTERVAL_MS = 1_200;
 const OPENAI_REALTIME_URL = "https://api.openai.com/v1/realtime";
 const SESSION_ENDPOINT = "/api/transcribe/session";
 
@@ -24,15 +25,20 @@ export class AudioRecorder {
   onRecordingComplete: (() => void) | null = null;
 
   #transcript = "";
+  #finalizedRealtimeSegments: string[] = [];
+  #pendingRealtimeSegment = "";
   #peerConnection: RTCPeerConnection | null = null;
   #dataChannel: RTCDataChannel | null = null;
   #stream: MediaStream | null = null;
   #startTime = 0;
   #rafId = 0;
   #silenceTimer: ReturnType<typeof setTimeout> | null = null;
+  #liveCommitTimer: ReturnType<typeof setInterval> | null = null;
+  #speechActive = false;
   #hasTranscription = false;
   #mockInterval: ReturnType<typeof setInterval> | null = null;
-  #stopping = false;
+  #stopRequested = false;
+  #finalizing = false;
 
   get isIdle() {
     return this.state === "idle";
@@ -57,8 +63,12 @@ export class AudioRecorder {
   async start() {
     this.error = "";
     this.#transcript = "";
+    this.#finalizedRealtimeSegments = [];
+    this.#pendingRealtimeSegment = "";
+    this.#speechActive = false;
     this.#hasTranscription = false;
-    this.#stopping = false;
+    this.#stopRequested = false;
+    this.#finalizing = false;
 
     this.state = "connecting";
 
@@ -115,8 +125,8 @@ export class AudioRecorder {
   }
 
   stop() {
-    if (this.#stopping) return;
-    this.#stopping = true;
+    if (this.#stopRequested || this.#finalizing) return;
+    this.#stopRequested = true;
 
     if (this.#mockInterval !== null) {
       clearInterval(this.#mockInterval);
@@ -125,8 +135,12 @@ export class AudioRecorder {
 
     this.#stopMonitoring();
 
+    this.#commitInputAudioBuffer(true);
+
     // Brief delay to catch any final transcription events
     const finalize = () => {
+      if (this.#finalizing) return;
+      this.#finalizing = true;
       this.#closeConnections();
       this.#releaseMedia();
       this.state = "idle";
@@ -141,7 +155,8 @@ export class AudioRecorder {
   }
 
   destroy() {
-    this.#stopping = true;
+    this.#stopRequested = true;
+    this.#finalizing = true;
     if (this.#mockInterval !== null) {
       clearInterval(this.#mockInterval);
       this.#mockInterval = null;
@@ -177,7 +192,7 @@ export class AudioRecorder {
     };
 
     dc.onerror = () => {
-      if (!this.#stopping) {
+      if (!this.#stopRequested && !this.#finalizing) {
         this.error = "Connection to transcription service lost.";
         this.#cleanup();
       }
@@ -217,7 +232,7 @@ export class AudioRecorder {
   }
 
   #handleRealtimeEvent(event: MessageEvent) {
-    if (this.#stopping) return;
+    if (this.#finalizing) return;
 
     let data: { type: string; delta?: string; transcript?: string };
     try {
@@ -229,30 +244,54 @@ export class AudioRecorder {
     switch (data.type) {
       case "conversation.item.input_audio_transcription.delta":
         if (data.delta) {
-          this.#transcript += data.delta;
+          this.#pendingRealtimeSegment += data.delta;
+          this.#publishRealtimeTranscript();
           this.#hasTranscription = true;
-          this.onTranscript?.(this.#transcript);
         }
         this.#resetSilenceTimer();
         break;
 
       case "conversation.item.input_audio_transcription.completed":
-        if (data.transcript) {
-          // Replace accumulated deltas with the finalized version and add separator
-          this.#transcript = this.#transcript.trimEnd() + " ";
-          this.#hasTranscription = true;
-          this.onTranscript?.(this.#transcript);
+        {
+          const finalizedSegment =
+            data.transcript?.trim() || this.#pendingRealtimeSegment.trim();
+          if (finalizedSegment) {
+            this.#finalizedRealtimeSegments.push(finalizedSegment);
+            this.#pendingRealtimeSegment = "";
+            this.#publishRealtimeTranscript();
+            this.#hasTranscription = true;
+          } else {
+            this.#pendingRealtimeSegment = "";
+          }
         }
         this.#resetSilenceTimer();
         break;
 
       case "input_audio_buffer.speech_started":
+        this.#speechActive = true;
+        this.#startLiveCommitTimer();
         this.#clearSilenceTimer();
         break;
 
       case "input_audio_buffer.speech_stopped":
+        this.#speechActive = false;
+        this.#clearLiveCommitTimer();
         this.#startSilenceTimer();
         break;
+    }
+  }
+
+  #publishRealtimeTranscript() {
+    const parts = [...this.#finalizedRealtimeSegments];
+    const pending = this.#pendingRealtimeSegment.trim();
+    if (pending) {
+      parts.push(pending);
+    }
+
+    const nextTranscript = parts.join(" ");
+    if (nextTranscript !== this.#transcript) {
+      this.#transcript = nextTranscript;
+      this.onTranscript?.(this.#transcript);
     }
   }
 
@@ -279,6 +318,31 @@ export class AudioRecorder {
     }
   }
 
+  #startLiveCommitTimer() {
+    if (this.#liveCommitTimer !== null) return;
+    this.#liveCommitTimer = setInterval(() => {
+      this.#commitInputAudioBuffer();
+    }, LIVE_COMMIT_INTERVAL_MS);
+  }
+
+  #clearLiveCommitTimer() {
+    if (this.#liveCommitTimer !== null) {
+      clearInterval(this.#liveCommitTimer);
+      this.#liveCommitTimer = null;
+    }
+  }
+
+  #commitInputAudioBuffer(force = false) {
+    if (!force && (this.#finalizing || this.#stopRequested || !this.#speechActive)) return;
+    if (this.#dataChannel?.readyState !== "open") return;
+
+    try {
+      this.#dataChannel.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+    } catch {
+      // Ignore transient channel send failures during teardown.
+    }
+  }
+
   // ── Mock mode ─────────────────────────────────────────────────────
 
   #startMock() {
@@ -296,7 +360,7 @@ export class AudioRecorder {
         this.#mockInterval = null;
         // Auto-stop after mock narrative finishes
         setTimeout(() => {
-          if (!this.#stopping) this.#autoStop();
+          if (!this.#stopRequested && !this.#finalizing) this.#autoStop();
         }, 500);
         return;
       }
@@ -337,6 +401,8 @@ export class AudioRecorder {
       this.#rafId = 0;
     }
     this.#clearSilenceTimer();
+    this.#clearLiveCommitTimer();
+    this.#speechActive = false;
   }
 
   #closeConnections() {
@@ -352,6 +418,8 @@ export class AudioRecorder {
   }
 
   #cleanup() {
+    this.#stopRequested = true;
+    this.#finalizing = true;
     this.#stopMonitoring();
     this.#closeConnections();
     this.#releaseMedia();
