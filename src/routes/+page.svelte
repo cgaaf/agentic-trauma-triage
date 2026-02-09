@@ -12,7 +12,7 @@
 	import { Alert, AlertDescription, AlertTitle } from '$lib/components/ui/alert/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 
-	import { AlertTriangle, RotateCcw } from '@lucide/svelte';
+	import { AlertTriangle, RotateCcw, ShieldAlert } from '@lucide/svelte';
 	import { triageState } from '$lib/state/triage.svelte.js';
 
 	let { data } = $props();
@@ -81,6 +81,15 @@
 					</h1>
 				{/if}
 				<ReportInput bind:value={reportValue} loading={triageState.isLoading} onsubmit={handleSubmit} />
+				{#if triageState.phase === 'idle'}
+					<Alert class="mt-6 border-amber-500/50 bg-transparent text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400">
+						<ShieldAlert class="size-4" />
+						<AlertTitle>Research Project Only</AlertTitle>
+						<AlertDescription>
+							This is an academic research prototype. Do not enter real patient data or protected health information (PHI).
+						</AlertDescription>
+					</Alert>
+				{/if}
 			</div>
 		{:else}
 			<div transition:slide={{ duration: 300 }}>
