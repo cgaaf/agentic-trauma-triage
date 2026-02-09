@@ -44,8 +44,8 @@ Auto-enabled when `ANTHROPIC_API_KEY` is missing or placeholder. Uses regex-base
 - **Merge logic**: `src/lib/server/engine/merge.ts` — combines results, determines activation level
 - **Client state**: `src/lib/state/triage.svelte.ts` — Svelte 5 `$state` class pattern (not stores)
 - **API route**: `src/routes/api/triage/+server.ts` — SSE POST endpoint
-- **Transcription route**: `src/routes/api/transcribe/+server.ts` — audio-to-text via OpenAI gpt-4o-transcribe
-- **Audio recorder**: `src/lib/audio/recorder.svelte.ts` — push-to-talk state machine with silence detection
+- **Transcription session**: `src/routes/api/transcribe/session/+server.ts` — ephemeral token for OpenAI Realtime API (WebRTC)
+- **Audio recorder**: `src/lib/audio/recorder.svelte.ts` — WebRTC streaming transcription with server-side VAD
 - **OpenAI client**: `src/lib/server/llm/openai.ts` — singleton client + model constant
 - **UI components**: `src/lib/components/triage/` — domain-specific components with Storybook stories
 

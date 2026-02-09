@@ -1,42 +1,86 @@
-export type RecorderState = "idle" | "recording" | "transcribing";
+import { env } from "$env/dynamic/public";
 
-const SILENCE_THRESHOLD = 0.01;
-const SILENCE_DURATION_MS = 5_000;
-const MAX_DURATION_S = 30;
+export type RecorderState = "idle" | "connecting" | "recording";
+
+export const MAX_DURATION_S =
+  Number(env.PUBLIC_MAX_RECORDING_DURATION_S) || 30;
+const SILENCE_TIMEOUT_MS = 5_000;
+const OPENAI_REALTIME_URL = "https://api.openai.com/v1/realtime";
+const SESSION_ENDPOINT = "/api/transcribe/session";
+
+const MOCK_NARRATIVE =
+  "45-year-old male involved in a high-speed MVC, " +
+  "unrestrained driver. GCS 12, SBP 88, HR 120, RR 28. " +
+  "Obvious deformity to the left femur with significant swelling. " +
+  "Complaining of chest pain with decreased breath sounds on the left side. " +
+  "Two large-bore IVs established, one liter normal saline bolus initiated.";
 
 export class AudioRecorder {
   state = $state<RecorderState>("idle");
   duration = $state(0);
-  audioLevel = $state(0);
   error = $state("");
 
-  onAutoStop: (() => void) | null = null;
+  onTranscript: ((text: string) => void) | null = null;
+  onRecordingComplete: (() => void) | null = null;
 
-  #mediaRecorder: MediaRecorder | null = null;
-  #audioContext: AudioContext | null = null;
-  #analyser: AnalyserNode | null = null;
+  #transcript = "";
+  #peerConnection: RTCPeerConnection | null = null;
+  #dataChannel: RTCDataChannel | null = null;
   #stream: MediaStream | null = null;
-  #chunks: Blob[] = [];
   #startTime = 0;
-  #silenceSince = 0;
   #rafId = 0;
+  #silenceTimer: ReturnType<typeof setTimeout> | null = null;
+  #hasTranscription = false;
+  #mockInterval: ReturnType<typeof setInterval> | null = null;
+  #stopping = false;
 
   get isIdle() {
     return this.state === "idle";
+  }
+
+  get isConnecting() {
+    return this.state === "connecting";
   }
 
   get isRecording() {
     return this.state === "recording";
   }
 
-  get isTranscribing() {
-    return this.state === "transcribing";
+  get remaining() {
+    return MAX_DURATION_S - this.duration;
+  }
+
+  get progress() {
+    return this.duration / MAX_DURATION_S;
   }
 
   async start() {
     this.error = "";
-    this.#chunks = [];
+    this.#transcript = "";
+    this.#hasTranscription = false;
+    this.#stopping = false;
 
+    this.state = "connecting";
+
+    // Fetch ephemeral token from our server
+    let clientSecret: string | null;
+    let isMock = false;
+    try {
+      const res = await fetch(SESSION_ENDPOINT, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: "Session creation failed" }));
+        throw new Error(body.error ?? `Session creation failed (${res.status})`);
+      }
+      const data = await res.json();
+      clientSecret = data.client_secret;
+      isMock = data.mock === true;
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : "Failed to start transcription session.";
+      this.state = "idle";
+      return;
+    }
+
+    // Request microphone access
     try {
       this.#stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
@@ -51,63 +95,221 @@ export class AudioRecorder {
       } else {
         this.error = "Could not access microphone.";
       }
+      this.state = "idle";
       return;
     }
 
-    // Set up audio analysis for level metering and silence detection
-    this.#audioContext = new AudioContext();
-    const source = this.#audioContext.createMediaStreamSource(this.#stream);
-    this.#analyser = this.#audioContext.createAnalyser();
-    this.#analyser.fftSize = 256;
-    source.connect(this.#analyser);
+    if (isMock) {
+      this.#startMock();
+      return;
+    }
 
-    // Prefer webm/opus, fall back to whatever the browser supports
-    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-      ? "audio/webm;codecs=opus"
-      : "";
-
-    this.#mediaRecorder = new MediaRecorder(this.#stream, mimeType ? { mimeType } : undefined);
-    this.#mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) this.#chunks.push(e.data);
-    };
-
-    this.#mediaRecorder.start(250); // Collect chunks every 250ms
-    this.state = "recording";
-    this.#startTime = Date.now();
-    this.#silenceSince = 0;
-    this.duration = 0;
-
-    this.#tick();
+    // Real mode: establish WebRTC connection to OpenAI
+    try {
+      await this.#connectWebRTC(clientSecret!);
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : "Failed to connect to transcription service.";
+      this.#releaseMedia();
+      this.state = "idle";
+    }
   }
 
   stop() {
-    if (this.#mediaRecorder?.state === "recording") {
-      this.#mediaRecorder.stop();
+    if (this.#stopping) return;
+    this.#stopping = true;
+
+    if (this.#mockInterval !== null) {
+      clearInterval(this.#mockInterval);
+      this.#mockInterval = null;
     }
+
     this.#stopMonitoring();
-    // State remains "recording" briefly — caller transitions via setTranscribing()
-  }
 
-  getBlob(): Blob {
-    const mimeType = this.#mediaRecorder?.mimeType ?? "audio/webm";
-    return new Blob(this.#chunks, { type: mimeType });
-  }
+    // Brief delay to catch any final transcription events
+    const finalize = () => {
+      this.#closeConnections();
+      this.#releaseMedia();
+      this.state = "idle";
+      this.onRecordingComplete?.();
+    };
 
-  setTranscribing() {
-    this.state = "transcribing";
-  }
-
-  reset() {
-    this.state = "idle";
-    this.duration = 0;
-    this.audioLevel = 0;
+    if (this.#dataChannel) {
+      setTimeout(finalize, 500);
+    } else {
+      finalize();
+    }
   }
 
   destroy() {
+    this.#stopping = true;
+    if (this.#mockInterval !== null) {
+      clearInterval(this.#mockInterval);
+      this.#mockInterval = null;
+    }
     this.#stopMonitoring();
+    this.#closeConnections();
     this.#releaseMedia();
     this.state = "idle";
   }
+
+  // ── WebRTC connection ─────────────────────────────────────────────
+
+  async #connectWebRTC(clientSecret: string) {
+    const pc = new RTCPeerConnection();
+    this.#peerConnection = pc;
+
+    // Add microphone track
+    for (const track of this.#stream!.getAudioTracks()) {
+      pc.addTrack(track, this.#stream!);
+    }
+
+    // Create data channel for OpenAI events
+    const dc = pc.createDataChannel("oai-events");
+    this.#dataChannel = dc;
+
+    dc.onmessage = (e) => this.#handleRealtimeEvent(e);
+
+    dc.onopen = () => {
+      this.state = "recording";
+      this.#startTime = Date.now();
+      this.duration = 0;
+      this.#tick();
+    };
+
+    dc.onerror = () => {
+      if (!this.#stopping) {
+        this.error = "Connection to transcription service lost.";
+        this.#cleanup();
+      }
+    };
+
+    // SDP offer/answer exchange
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    // Wait for ICE candidates to be gathered before sending the SDP
+    await new Promise<void>((resolve) => {
+      if (pc.iceGatheringState === "complete") {
+        resolve();
+      } else {
+        pc.addEventListener("icegatheringstatechange", () => {
+          if (pc.iceGatheringState === "complete") resolve();
+        });
+      }
+    });
+
+    // Model is embedded in the ephemeral token — no query param needed
+    const sdpResponse = await fetch(OPENAI_REALTIME_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${clientSecret}`,
+        "Content-Type": "application/sdp",
+      },
+      body: pc.localDescription!.sdp,
+    });
+
+    if (!sdpResponse.ok) {
+      throw new Error(`WebRTC handshake failed (${sdpResponse.status})`);
+    }
+
+    const answerSdp = await sdpResponse.text();
+    await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+  }
+
+  #handleRealtimeEvent(event: MessageEvent) {
+    if (this.#stopping) return;
+
+    let data: { type: string; delta?: string; transcript?: string };
+    try {
+      data = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+
+    switch (data.type) {
+      case "conversation.item.input_audio_transcription.delta":
+        if (data.delta) {
+          this.#transcript += data.delta;
+          this.#hasTranscription = true;
+          this.onTranscript?.(this.#transcript);
+        }
+        this.#resetSilenceTimer();
+        break;
+
+      case "conversation.item.input_audio_transcription.completed":
+        if (data.transcript) {
+          // Replace accumulated deltas with the finalized version and add separator
+          this.#transcript = this.#transcript.trimEnd() + " ";
+          this.#hasTranscription = true;
+          this.onTranscript?.(this.#transcript);
+        }
+        this.#resetSilenceTimer();
+        break;
+
+      case "input_audio_buffer.speech_started":
+        this.#clearSilenceTimer();
+        break;
+
+      case "input_audio_buffer.speech_stopped":
+        this.#startSilenceTimer();
+        break;
+    }
+  }
+
+  // ── Silence detection (server-VAD driven) ─────────────────────────
+
+  #startSilenceTimer() {
+    this.#clearSilenceTimer();
+    if (this.#hasTranscription) {
+      this.#silenceTimer = setTimeout(() => this.#autoStop(), SILENCE_TIMEOUT_MS);
+    }
+  }
+
+  #resetSilenceTimer() {
+    if (this.#silenceTimer !== null) {
+      this.#clearSilenceTimer();
+      this.#startSilenceTimer();
+    }
+  }
+
+  #clearSilenceTimer() {
+    if (this.#silenceTimer !== null) {
+      clearTimeout(this.#silenceTimer);
+      this.#silenceTimer = null;
+    }
+  }
+
+  // ── Mock mode ─────────────────────────────────────────────────────
+
+  #startMock() {
+    this.state = "recording";
+    this.#startTime = Date.now();
+    this.duration = 0;
+    this.#tick();
+
+    const words = MOCK_NARRATIVE.split(" ");
+    let wordIndex = 0;
+
+    this.#mockInterval = setInterval(() => {
+      if (wordIndex >= words.length) {
+        clearInterval(this.#mockInterval!);
+        this.#mockInterval = null;
+        // Auto-stop after mock narrative finishes
+        setTimeout(() => {
+          if (!this.#stopping) this.#autoStop();
+        }, 500);
+        return;
+      }
+
+      if (wordIndex > 0) this.#transcript += " ";
+      this.#transcript += words[wordIndex];
+      wordIndex++;
+      this.#hasTranscription = true;
+      this.onTranscript?.(this.#transcript);
+    }, 150);
+  }
+
+  // ── Duration tick and auto-stop ───────────────────────────────────
 
   #tick() {
     if (this.state !== "recording") return;
@@ -115,34 +317,6 @@ export class AudioRecorder {
     const elapsed = (Date.now() - this.#startTime) / 1000;
     this.duration = Math.floor(elapsed);
 
-    // Read audio level from analyser
-    if (this.#analyser) {
-      const data = new Uint8Array(this.#analyser.frequencyBinCount);
-      this.#analyser.getByteFrequencyData(data);
-
-      // Compute RMS level normalized to 0-1
-      let sum = 0;
-      for (let i = 0; i < data.length; i++) {
-        const normalized = data[i] / 255;
-        sum += normalized * normalized;
-      }
-      const rms = Math.sqrt(sum / data.length);
-      this.audioLevel = rms;
-
-      // Silence detection
-      if (rms < SILENCE_THRESHOLD) {
-        if (this.#silenceSince === 0) {
-          this.#silenceSince = Date.now();
-        } else if (Date.now() - this.#silenceSince >= SILENCE_DURATION_MS) {
-          this.#autoStop();
-          return;
-        }
-      } else {
-        this.#silenceSince = 0;
-      }
-    }
-
-    // Max duration check
     if (elapsed >= MAX_DURATION_S) {
       this.#autoStop();
       return;
@@ -153,23 +327,34 @@ export class AudioRecorder {
 
   #autoStop() {
     this.stop();
-    this.onAutoStop?.();
   }
+
+  // ── Cleanup helpers ───────────────────────────────────────────────
 
   #stopMonitoring() {
     if (this.#rafId) {
       cancelAnimationFrame(this.#rafId);
       this.#rafId = 0;
     }
+    this.#clearSilenceTimer();
+  }
+
+  #closeConnections() {
+    this.#dataChannel?.close();
+    this.#dataChannel = null;
+    this.#peerConnection?.close();
+    this.#peerConnection = null;
   }
 
   #releaseMedia() {
     this.#stream?.getTracks().forEach((t) => t.stop());
     this.#stream = null;
-    this.#audioContext?.close().catch(() => {});
-    this.#audioContext = null;
-    this.#analyser = null;
-    this.#mediaRecorder = null;
-    this.#chunks = [];
+  }
+
+  #cleanup() {
+    this.#stopMonitoring();
+    this.#closeConnections();
+    this.#releaseMedia();
+    this.state = "idle";
   }
 }
