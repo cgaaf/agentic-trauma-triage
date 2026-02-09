@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { slide } from 'svelte/transition';
+	import { browser } from '$app/environment';
 	import Header from '$lib/components/triage/Header.svelte';
 	import ReportInput from '$lib/components/triage/ReportInput.svelte';
 	import ReportDisplay from '$lib/components/triage/ReportDisplay.svelte';
@@ -9,10 +10,11 @@
 	import AdditionalCriteria from '$lib/components/triage/AdditionalCriteria.svelte';
 	import ActivationCard from '$lib/components/triage/ActivationCard.svelte';
 	import DisclaimerFooter from '$lib/components/triage/DisclaimerFooter.svelte';
+	import DisclaimerModal from '$lib/components/triage/DisclaimerModal.svelte';
 	import { Alert, AlertDescription, AlertTitle } from '$lib/components/ui/alert/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 
-	import { AlertTriangle, RotateCcw, ShieldAlert } from '@lucide/svelte';
+	import { AlertTriangle, RotateCcw } from '@lucide/svelte';
 	import { triageState } from '$lib/state/triage.svelte.js';
 
 	let { data } = $props();
@@ -20,6 +22,13 @@
 	let reportExpanded = $state(false);
 	let showProgressSteps = $state(true);
 	let activationCardEl = $state<HTMLDivElement>();
+	let disclaimerOpen = $state(false);
+
+	$effect(() => {
+		if (browser) {
+			disclaimerOpen = localStorage.getItem('disclaimer-accepted') !== 'true';
+		}
+	});
 
 	$effect(() => {
 		const phase = triageState.phase;
@@ -81,15 +90,6 @@
 					</h1>
 				{/if}
 				<ReportInput bind:value={reportValue} loading={triageState.isLoading} onsubmit={handleSubmit} />
-				{#if triageState.phase === 'idle'}
-					<Alert class="mt-6 border-amber-500/50 bg-transparent text-amber-900 dark:text-amber-200 [&>svg]:text-amber-600 dark:[&>svg]:text-amber-400">
-						<ShieldAlert class="size-4" />
-						<AlertTitle>Research Project Only</AlertTitle>
-						<AlertDescription>
-							This is an academic research prototype. Do not enter real patient data or protected health information (PHI).
-						</AlertDescription>
-					</Alert>
-				{/if}
 			</div>
 		{:else}
 			<div transition:slide={{ duration: 300 }}>
@@ -164,3 +164,5 @@
 		{/if}
 	</main>
 </div>
+
+<DisclaimerModal bind:open={disclaimerOpen} />
