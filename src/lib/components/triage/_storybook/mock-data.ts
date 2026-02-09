@@ -285,6 +285,6 @@ export const geriatricJustification =
   "Patient meets Level 2 trauma activation criteria: geriatric patient (72 years) with hip fracture and anticoagulant use. Head strike on warfarin requires close monitoring. Priority trauma team response with geriatric consultation recommended.";
 
 export const sampleMissingFieldWarnings: string[] = [
-  "Respiratory rate (RR) could not be extracted — vital sign threshold criteria may be incomplete",
-  "GCS score could not be extracted — neurological criteria may be incomplete",
+  "Respiratory rate not reported, which may result in under-triage.",
+  "Glasgow Coma Scale not reported, which may result in under-triage.",
 ];

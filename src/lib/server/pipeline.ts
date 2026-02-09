@@ -134,14 +134,16 @@ export async function* runPipeline(report: string): AsyncGenerator<SSEEvent> {
 
   const missingFieldWarnings: string[] = [];
   if (fields.sbp === null)
-    missingFieldWarnings.push("Without SBP, blood pressure criteria cannot be fully evaluated.");
+    missingFieldWarnings.push(
+      "Systolic blood pressure not reported, which may result in under-triage.",
+    );
   if (fields.hr === null)
-    missingFieldWarnings.push("Without HR, heart rate criteria cannot be fully evaluated.");
+    missingFieldWarnings.push("Heart rate not reported, which may result in under-triage.");
   if (fields.rr === null)
-    missingFieldWarnings.push("Without RR, respiratory rate criteria cannot be fully evaluated.");
+    missingFieldWarnings.push("Respiratory rate not reported, which may result in under-triage.");
   if (fields.gcs === null)
     missingFieldWarnings.push(
-      "Without GCS, Glasgow Coma Scale criteria cannot be fully evaluated.",
+      "Glasgow Coma Scale not reported, which may result in under-triage.",
     );
 
   yield { type: "phase", phase: "complete" };

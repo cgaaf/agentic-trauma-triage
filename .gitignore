@@ -41,3 +41,8 @@ logs/
 
 *storybook.log
 storybook-static
+
+# Claude Code local files (user-specific)
+.claude/settings.local.json
+.claude/CLAUDE.local.md
+CLAUDE.local.md
