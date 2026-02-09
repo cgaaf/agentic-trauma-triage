@@ -23,10 +23,10 @@
 				<ShieldAlert class="size-6 text-amber-600 dark:text-amber-400" />
 			</div>
 			<AlertDialog.Title>Research Project — Not for Clinical Use</AlertDialog.Title>
-			<p class="text-sm text-muted-foreground">
+			<AlertDialog.Description class="text-sm text-muted-foreground">
 				This tool is an <strong>academic research prototype</strong> developed for educational and
 				research purposes only.
-			</p>
+			</AlertDialog.Description>
 		</div>
 		<ul class="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
 			<li>Not HIPAA compliant — no data encryption or access controls</li>
@@ -37,9 +37,9 @@
 			Do not enter real patient data or protected health information (PHI). Use only fictional or
 			synthetic scenarios.
 		</p>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel onclick={handleDecline}>Decline</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={handleAccept}>I Understand — No PHI</AlertDialog.Action>
-		</AlertDialog.Footer>
+		<div class="flex flex-col gap-2">
+			<AlertDialog.Action class="w-full" onclick={handleAccept}>I Understand — No PHI</AlertDialog.Action>
+			<AlertDialog.Cancel class="w-full" onclick={handleDecline}>Decline</AlertDialog.Cancel>
+		</div>
 	</AlertDialog.Content>
 </AlertDialog.Root>
