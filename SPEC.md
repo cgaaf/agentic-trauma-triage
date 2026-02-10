@@ -453,7 +453,6 @@ Minimal header bar containing:
 - **Dark mode toggle**: Sun/moon icon (using mode-watcher)
 - **History button**: Clock icon that opens a drawer (future phase — not currently displayed)
 
-
 ### Visual Tone
 
 **High-contrast emergency design** optimized for quick scanning in stressful environments:

@@ -156,19 +156,25 @@ beforeEach(() => {
     getTracks: () => [track],
   } as unknown as MediaStream;
 
-  vi.stubGlobal("fetch", vi.fn(async () => new Response(
-    JSON.stringify({
-      provider: "deepgram",
-      temporary_token: "token",
-      model: "nova-3-medical",
-      language: "en-US",
-      keyterms: [],
-    }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    },
-  )));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            provider: "deepgram",
+            temporary_token: "token",
+            model: "nova-3-medical",
+            language: "en-US",
+            keyterms: [],
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+    ),
+  );
 
   vi.stubGlobal("navigator", {
     mediaDevices: {
@@ -176,7 +182,10 @@ beforeEach(() => {
     },
   });
   vi.stubGlobal("MediaRecorder", MockMediaRecorder as unknown as typeof MediaRecorder);
-  vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
+  vi.stubGlobal(
+    "requestAnimationFrame",
+    vi.fn(() => 1),
+  );
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
 });
 

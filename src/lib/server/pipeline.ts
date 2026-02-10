@@ -128,9 +128,7 @@ export async function* runPipeline(report: string): AsyncGenerator<SSEEvent> {
   if (fields.rr === null)
     missingFieldWarnings.push("Respiratory rate not reported, which may result in under-triage.");
   if (fields.gcs === null)
-    missingFieldWarnings.push(
-      "Glasgow Coma Scale not reported, which may result in under-triage.",
-    );
+    missingFieldWarnings.push("Glasgow Coma Scale not reported, which may result in under-triage.");
 
   yield { type: "phase", phase: "complete" };
   yield {
