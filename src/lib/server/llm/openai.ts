@@ -9,5 +9,3 @@ export function getOpenAIClient(): OpenAI {
   }
   return client;
 }
-
-export const TRANSCRIPTION_MODEL = "gpt-4o-transcribe";

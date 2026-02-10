@@ -1,12 +1,27 @@
 import { env } from "$env/dynamic/public";
+import {
+  LiveTranscriptionEvents,
+  createClient,
+  type ListenLiveClient,
+  type LiveTranscriptionEvent,
+} from "@deepgram/sdk";
 
 export type RecorderState = "idle" | "connecting" | "recording";
 
-export const MAX_DURATION_S =
-  Number(env.PUBLIC_MAX_RECORDING_DURATION_S) || 30;
+type TranscribeSessionResponse = {
+  mock?: boolean;
+  provider?: "deepgram" | string;
+  temporary_token?: string | null;
+  model?: string;
+  language?: string;
+  keyterms?: string[];
+  error?: string;
+};
+
+export const MAX_DURATION_S = Number(env.PUBLIC_MAX_RECORDING_DURATION_S) || 30;
 const SILENCE_TIMEOUT_MS = 5_000;
-const LIVE_COMMIT_INTERVAL_MS = 1_200;
-const OPENAI_REALTIME_URL = "https://api.openai.com/v1/realtime";
+const KEEP_ALIVE_INTERVAL_MS = 3_000;
+const MEDIA_CHUNK_MS = 250;
 const SESSION_ENDPOINT = "/api/transcribe/session";
 
 const MOCK_NARRATIVE =
@@ -27,14 +42,13 @@ export class AudioRecorder {
   #transcript = "";
   #finalizedRealtimeSegments: string[] = [];
   #pendingRealtimeSegment = "";
-  #peerConnection: RTCPeerConnection | null = null;
-  #dataChannel: RTCDataChannel | null = null;
+  #connection: ListenLiveClient | null = null;
   #stream: MediaStream | null = null;
+  #mediaRecorder: MediaRecorder | null = null;
   #startTime = 0;
   #rafId = 0;
   #silenceTimer: ReturnType<typeof setTimeout> | null = null;
-  #liveCommitTimer: ReturnType<typeof setInterval> | null = null;
-  #speechActive = false;
+  #keepAliveTimer: ReturnType<typeof setInterval> | null = null;
   #hasTranscription = false;
   #mockInterval: ReturnType<typeof setInterval> | null = null;
   #stopRequested = false;
@@ -65,38 +79,33 @@ export class AudioRecorder {
     this.#transcript = "";
     this.#finalizedRealtimeSegments = [];
     this.#pendingRealtimeSegment = "";
-    this.#speechActive = false;
     this.#hasTranscription = false;
     this.#stopRequested = false;
     this.#finalizing = false;
 
     this.state = "connecting";
 
-    // Fetch ephemeral token from our server
-    let clientSecret: string | null;
-    let isMock = false;
+    let session: TranscribeSessionResponse;
     try {
       const res = await fetch(SESSION_ENDPOINT, { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({ error: "Session creation failed" }));
         throw new Error(body.error ?? `Session creation failed (${res.status})`);
       }
-      const data = await res.json();
-      clientSecret = data.client_secret;
-      isMock = data.mock === true;
+      session = (await res.json()) as TranscribeSessionResponse;
     } catch (err) {
       this.error = err instanceof Error ? err.message : "Failed to start transcription session.";
       this.state = "idle";
       return;
     }
 
-    // Request microphone access
     try {
       this.#stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
       if (err instanceof DOMException) {
         if (err.name === "NotAllowedError") {
-          this.error = "Microphone access denied. Please allow microphone permission and try again.";
+          this.error =
+            "Microphone access denied. Please allow microphone permission and try again.";
         } else if (err.name === "NotFoundError") {
           this.error = "No microphone found. Please connect a microphone and try again.";
         } else {
@@ -109,16 +118,28 @@ export class AudioRecorder {
       return;
     }
 
-    if (isMock) {
+    if (session.mock === true) {
       this.#startMock();
       return;
     }
 
-    // Real mode: establish WebRTC connection to OpenAI
+    if (!session.temporary_token) {
+      this.error = "No transcription token returned by server.";
+      this.#releaseMedia();
+      this.state = "idle";
+      return;
+    }
+
     try {
-      await this.#connectWebRTC(clientSecret!);
+      await this.#connectWebSocket(
+        session.temporary_token,
+        session.model ?? "nova-3-medical",
+        session.language ?? "en-US",
+        Array.isArray(session.keyterms) ? session.keyterms : [],
+      );
     } catch (err) {
-      this.error = err instanceof Error ? err.message : "Failed to connect to transcription service.";
+      this.error =
+        err instanceof Error ? err.message : "Failed to connect to transcription service.";
       this.#releaseMedia();
       this.state = "idle";
     }
@@ -134,150 +155,296 @@ export class AudioRecorder {
     }
 
     this.#stopMonitoring();
+    this.#stopMediaRecorder();
 
-    this.#commitInputAudioBuffer(true);
-
-    // Brief delay to catch any final transcription events
-    const finalize = () => {
-      if (this.#finalizing) return;
-      this.#finalizing = true;
-      this.#closeConnections();
-      this.#releaseMedia();
-      this.state = "idle";
-      this.onRecordingComplete?.();
-    };
-
-    if (this.#dataChannel) {
-      setTimeout(finalize, 500);
-    } else {
-      finalize();
+    if (this.#connection) {
+      this.#finalizeConnection();
+      setTimeout(() => this.#requestCloseConnection(), 150);
+      setTimeout(() => this.#completeStop(), 900);
+      return;
     }
+
+    this.#completeStop();
   }
 
   destroy() {
     this.#stopRequested = true;
     this.#finalizing = true;
+
     if (this.#mockInterval !== null) {
       clearInterval(this.#mockInterval);
       this.#mockInterval = null;
     }
+
     this.#stopMonitoring();
-    this.#closeConnections();
+    this.#stopMediaRecorder();
+    this.#closeConnection();
     this.#releaseMedia();
     this.state = "idle";
   }
 
-  // ── WebRTC connection ─────────────────────────────────────────────
+  // ── WebSocket connection ─────────────────────────────────────────
 
-  async #connectWebRTC(clientSecret: string) {
-    const pc = new RTCPeerConnection();
-    this.#peerConnection = pc;
+  async #connectWebSocket(token: string, model: string, language: string, keyterms: string[]) {
+    const deepgramClient = createClient({ accessToken: token });
+    const connection = deepgramClient.listen.live({
+      model,
+      language,
+      interim_results: true,
+      smart_format: true,
+      punctuate: true,
+      endpointing: 300,
+      vad_events: true,
+      utterance_end_ms: 1000,
+      keyterm: keyterms.filter((term) => term.trim().length > 0),
+    });
 
-    // Add microphone track
-    for (const track of this.#stream!.getAudioTracks()) {
-      pc.addTrack(track, this.#stream!);
+    this.#connection = connection;
+
+    await new Promise<void>((resolve, reject) => {
+      let hasOpened = false;
+      let settled = false;
+
+      const rejectOnce = (message: string) => {
+        if (settled) return;
+        settled = true;
+        this.#closeConnection();
+        reject(new Error(message));
+      };
+
+      const resolveOnce = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+
+      connection.on(LiveTranscriptionEvents.Open, async () => {
+        hasOpened = true;
+        try {
+          this.#startMediaRecorder();
+          this.#startKeepAliveTimer();
+          this.state = "recording";
+          this.#startTime = Date.now();
+          this.duration = 0;
+          this.#tick();
+          resolveOnce();
+        } catch (err) {
+          rejectOnce(err instanceof Error ? err.message : "Failed to start microphone streaming.");
+        }
+      });
+
+      connection.on(LiveTranscriptionEvents.Transcript, (data) =>
+        this.#handleTranscriptEvent(data),
+      );
+      connection.on(LiveTranscriptionEvents.SpeechStarted, () => this.#clearSilenceTimer());
+      connection.on(LiveTranscriptionEvents.UtteranceEnd, () => this.#startSilenceTimer());
+
+      connection.on(LiveTranscriptionEvents.Error, (err: unknown) => {
+        const message = this.#extractRealtimeErrorMessage(err);
+        if (!hasOpened) {
+          rejectOnce(message);
+          return;
+        }
+
+        if (!this.#stopRequested && !this.#finalizing) {
+          this.error = message;
+          this.#cleanup();
+        }
+      });
+
+      connection.on(LiveTranscriptionEvents.Close, () => {
+        if (!hasOpened) {
+          rejectOnce("Transcription WebSocket closed before ready.");
+          return;
+        }
+
+        if (this.#stopRequested || this.#finalizing) {
+          this.#completeStop();
+          return;
+        }
+
+        this.error = "Connection to transcription service lost.";
+        this.#cleanup();
+      });
+    });
+  }
+
+  #startMediaRecorder() {
+    if (!this.#stream) {
+      throw new Error("Microphone stream is not available.");
     }
 
-    // Create data channel for OpenAI events
-    const dc = pc.createDataChannel("oai-events");
-    this.#dataChannel = dc;
+    const mimeType = this.#pickSupportedMimeType();
+    const recorder = mimeType
+      ? new MediaRecorder(this.#stream, { mimeType })
+      : new MediaRecorder(this.#stream);
 
-    dc.onmessage = (e) => this.#handleRealtimeEvent(e);
+    recorder.ondataavailable = async (event) => {
+      if (!event.data || event.data.size === 0) return;
+      if (!this.#connection) return;
 
-    dc.onopen = () => {
-      this.state = "recording";
-      this.#startTime = Date.now();
-      this.duration = 0;
-      this.#tick();
+      try {
+        const audioBuffer = await event.data.arrayBuffer();
+        this.#connection.send(audioBuffer);
+      } catch {
+        // Ignore transient errors while the stream is shutting down.
+      }
     };
 
-    dc.onerror = () => {
+    recorder.onerror = () => {
       if (!this.#stopRequested && !this.#finalizing) {
-        this.error = "Connection to transcription service lost.";
+        this.error = "Microphone recording failed.";
         this.#cleanup();
       }
     };
 
-    // SDP offer/answer exchange
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-
-    // Wait for ICE candidates to be gathered before sending the SDP
-    await new Promise<void>((resolve) => {
-      if (pc.iceGatheringState === "complete") {
-        resolve();
-      } else {
-        pc.addEventListener("icegatheringstatechange", () => {
-          if (pc.iceGatheringState === "complete") resolve();
-        });
-      }
-    });
-
-    // Model is embedded in the ephemeral token — no query param needed
-    const sdpResponse = await fetch(OPENAI_REALTIME_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${clientSecret}`,
-        "Content-Type": "application/sdp",
-      },
-      body: pc.localDescription!.sdp,
-    });
-
-    if (!sdpResponse.ok) {
-      throw new Error(`WebRTC handshake failed (${sdpResponse.status})`);
-    }
-
-    const answerSdp = await sdpResponse.text();
-    await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+    recorder.start(MEDIA_CHUNK_MS);
+    this.#mediaRecorder = recorder;
   }
 
-  #handleRealtimeEvent(event: MessageEvent) {
-    if (this.#finalizing) return;
-
-    let data: { type: string; delta?: string; transcript?: string };
-    try {
-      data = JSON.parse(event.data);
-    } catch {
-      return;
+  #pickSupportedMimeType(): string | undefined {
+    if (typeof MediaRecorder.isTypeSupported !== "function") {
+      return undefined;
     }
 
-    switch (data.type) {
-      case "conversation.item.input_audio_transcription.delta":
-        if (data.delta) {
-          this.#pendingRealtimeSegment += data.delta;
-          this.#publishRealtimeTranscript();
+    const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"];
+
+    for (const candidate of candidates) {
+      if (MediaRecorder.isTypeSupported(candidate)) {
+        return candidate;
+      }
+    }
+
+    return undefined;
+  }
+
+  #stopMediaRecorder() {
+    if (!this.#mediaRecorder) return;
+
+    if (this.#mediaRecorder.state !== "inactive") {
+      try {
+        this.#mediaRecorder.stop();
+      } catch {
+        // Ignore recorder stop errors during teardown.
+      }
+    }
+
+    this.#mediaRecorder = null;
+  }
+
+  #startKeepAliveTimer() {
+    if (this.#keepAliveTimer !== null) return;
+
+    this.#keepAliveTimer = setInterval(() => {
+      try {
+        this.#connection?.keepAlive();
+      } catch {
+        // Ignore keep-alive errors while shutting down.
+      }
+    }, KEEP_ALIVE_INTERVAL_MS);
+  }
+
+  #clearKeepAliveTimer() {
+    if (this.#keepAliveTimer !== null) {
+      clearInterval(this.#keepAliveTimer);
+      this.#keepAliveTimer = null;
+    }
+  }
+
+  #closeConnection() {
+    const connection = this.#connection;
+    this.#connection = null;
+    if (!connection) return;
+    try {
+      connection.requestClose();
+    } catch {
+      // Ignore request-close failures during teardown.
+    }
+    try {
+      connection.disconnect();
+    } catch {
+      // Ignore disconnect failures during teardown.
+    }
+  }
+
+  #handleTranscriptEvent(data: LiveTranscriptionEvent) {
+    if (this.#finalizing) return;
+
+    const transcript = data.channel?.alternatives?.[0]?.transcript?.trim() ?? "";
+
+    if (data.is_final) {
+      if (transcript) {
+        const lastFinal =
+          this.#finalizedRealtimeSegments[this.#finalizedRealtimeSegments.length - 1];
+        if (lastFinal !== transcript) {
+          this.#finalizedRealtimeSegments.push(transcript);
           this.#hasTranscription = true;
         }
-        this.#resetSilenceTimer();
-        break;
+      }
+      this.#pendingRealtimeSegment = "";
+      this.#publishRealtimeTranscript();
+    } else if (transcript) {
+      this.#pendingRealtimeSegment = transcript;
+      this.#hasTranscription = true;
+      this.#publishRealtimeTranscript();
+    }
 
-      case "conversation.item.input_audio_transcription.completed":
-        {
-          const finalizedSegment =
-            data.transcript?.trim() || this.#pendingRealtimeSegment.trim();
-          if (finalizedSegment) {
-            this.#finalizedRealtimeSegments.push(finalizedSegment);
-            this.#pendingRealtimeSegment = "";
-            this.#publishRealtimeTranscript();
-            this.#hasTranscription = true;
-          } else {
-            this.#pendingRealtimeSegment = "";
-          }
-        }
-        this.#resetSilenceTimer();
-        break;
+    if (transcript) this.#clearSilenceTimer();
 
-      case "input_audio_buffer.speech_started":
-        this.#speechActive = true;
-        this.#startLiveCommitTimer();
-        this.#clearSilenceTimer();
-        break;
+    if (data.speech_final || data.from_finalize) {
+      this.#startSilenceTimer();
+    }
+  }
 
-      case "input_audio_buffer.speech_stopped":
-        this.#speechActive = false;
-        this.#clearLiveCommitTimer();
-        this.#startSilenceTimer();
-        break;
+  #extractRealtimeErrorMessage(err: unknown): string {
+    if (typeof err === "string" && err.trim()) {
+      return err;
+    }
+
+    if (err && typeof err === "object") {
+      const withMessage = err as {
+        message?: string;
+        statusCode?: number;
+        error?: { message?: string };
+      };
+
+      if (typeof withMessage.statusCode === "number") {
+        return `Transcription connection failed (${withMessage.statusCode}).`;
+      }
+
+      if (typeof withMessage.message === "string" && withMessage.message.trim()) {
+        return withMessage.message;
+      }
+
+      if (
+        withMessage.error &&
+        typeof withMessage.error.message === "string" &&
+        withMessage.error.message.trim()
+      ) {
+        return withMessage.error.message;
+      }
+    }
+
+    return "Connection to transcription service lost.";
+  }
+
+  #finalizeConnection() {
+    if (!this.#connection) return;
+
+    try {
+      this.#connection.finalize();
+    } catch {
+      // Ignore finalize failures during teardown.
+    }
+  }
+
+  #requestCloseConnection() {
+    if (!this.#connection) return;
+
+    try {
+      this.#connection.requestClose();
+    } catch {
+      // Ignore close request failures during teardown.
     }
   }
 
@@ -295,19 +462,12 @@ export class AudioRecorder {
     }
   }
 
-  // ── Silence detection (server-VAD driven) ─────────────────────────
+  // ── Silence detection ───────────────────────────────────────────
 
   #startSilenceTimer() {
     this.#clearSilenceTimer();
     if (this.#hasTranscription) {
       this.#silenceTimer = setTimeout(() => this.#autoStop(), SILENCE_TIMEOUT_MS);
-    }
-  }
-
-  #resetSilenceTimer() {
-    if (this.#silenceTimer !== null) {
-      this.#clearSilenceTimer();
-      this.#startSilenceTimer();
     }
   }
 
@@ -318,32 +478,7 @@ export class AudioRecorder {
     }
   }
 
-  #startLiveCommitTimer() {
-    if (this.#liveCommitTimer !== null) return;
-    this.#liveCommitTimer = setInterval(() => {
-      this.#commitInputAudioBuffer();
-    }, LIVE_COMMIT_INTERVAL_MS);
-  }
-
-  #clearLiveCommitTimer() {
-    if (this.#liveCommitTimer !== null) {
-      clearInterval(this.#liveCommitTimer);
-      this.#liveCommitTimer = null;
-    }
-  }
-
-  #commitInputAudioBuffer(force = false) {
-    if (!force && (this.#finalizing || this.#stopRequested || !this.#speechActive)) return;
-    if (this.#dataChannel?.readyState !== "open") return;
-
-    try {
-      this.#dataChannel.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
-    } catch {
-      // Ignore transient channel send failures during teardown.
-    }
-  }
-
-  // ── Mock mode ─────────────────────────────────────────────────────
+  // ── Mock mode ───────────────────────────────────────────────────
 
   #startMock() {
     this.state = "recording";
@@ -358,7 +493,6 @@ export class AudioRecorder {
       if (wordIndex >= words.length) {
         clearInterval(this.#mockInterval!);
         this.#mockInterval = null;
-        // Auto-stop after mock narrative finishes
         setTimeout(() => {
           if (!this.#stopRequested && !this.#finalizing) this.#autoStop();
         }, 500);
@@ -373,7 +507,7 @@ export class AudioRecorder {
     }, 150);
   }
 
-  // ── Duration tick and auto-stop ───────────────────────────────────
+  // ── Duration tick and auto-stop ─────────────────────────────────
 
   #tick() {
     if (this.state !== "recording") return;
@@ -393,35 +527,41 @@ export class AudioRecorder {
     this.stop();
   }
 
-  // ── Cleanup helpers ───────────────────────────────────────────────
+  // ── Cleanup helpers ─────────────────────────────────────────────
 
   #stopMonitoring() {
     if (this.#rafId) {
       cancelAnimationFrame(this.#rafId);
       this.#rafId = 0;
     }
-    this.#clearSilenceTimer();
-    this.#clearLiveCommitTimer();
-    this.#speechActive = false;
-  }
 
-  #closeConnections() {
-    this.#dataChannel?.close();
-    this.#dataChannel = null;
-    this.#peerConnection?.close();
-    this.#peerConnection = null;
+    this.#clearSilenceTimer();
+    this.#clearKeepAliveTimer();
   }
 
   #releaseMedia() {
-    this.#stream?.getTracks().forEach((t) => t.stop());
+    this.#stream?.getTracks().forEach((track) => track.stop());
     this.#stream = null;
+  }
+
+  #completeStop() {
+    if (this.#finalizing) return;
+
+    this.#finalizing = true;
+    this.#stopMonitoring();
+    this.#stopMediaRecorder();
+    this.#closeConnection();
+    this.#releaseMedia();
+    this.state = "idle";
+    this.onRecordingComplete?.();
   }
 
   #cleanup() {
     this.#stopRequested = true;
     this.#finalizing = true;
     this.#stopMonitoring();
-    this.#closeConnections();
+    this.#stopMediaRecorder();
+    this.#closeConnection();
     this.#releaseMedia();
     this.state = "idle";
   }

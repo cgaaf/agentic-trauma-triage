@@ -30,3 +30,4 @@ pnpm dev
 ```
 
 Requires an `ANTHROPIC_API_KEY` environment variable (see `.env.example`).
+For live speech-to-text input, also set `DEEPGRAM_API_KEY`.

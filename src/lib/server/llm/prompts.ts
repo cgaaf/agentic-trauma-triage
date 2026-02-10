@@ -8,7 +8,12 @@ Rules:
 - If a value is not mentioned or cannot be determined, return null
 - For injuries, return an array of strings describing each injury
 - Determine if the input is actually a trauma/EMS report (isTraumaReport)
-- Be generous in interpretation — EMS reports come in many formats (MIST, SOAP, free-form narrative)`;
+- Be generous in interpretation — EMS reports come in many formats (MIST, SOAP, free-form narrative)
+- Input may be raw speech-to-text transcription with recognition mistakes, missing punctuation, and broken phrasing
+- Treat common spoken EMS shorthand/slang (e.g., GCS, SBP/BP, EtOH, GSW, MVC, MCC, peds/pedestrian struck) as high-signal context
+- Correct likely transcription mistakes only when context makes the meaning clear
+- If a value remains ambiguous after contextual interpretation, return null (do not guess)
+- Preserve uncertain but clinically relevant clues in additionalContext`;
 
 export const EXTRACTION_TOOL: Anthropic.Messages.Tool = {
   name: "extract_trauma_fields",

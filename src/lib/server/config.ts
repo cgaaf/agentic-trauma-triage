@@ -4,7 +4,7 @@ const MOCK_KEY_PLACEHOLDERS = new Set([
   "sk-placeholder",
   "your-api-key-here",
   "insert-anthropic-api-key",
-  "insert-openai-api-key",
+  "insert-deepgram-api-key",
 ]);
 
 function isMissingApiKey(key: string | undefined): boolean {
@@ -17,8 +17,13 @@ export function isMockMode(): boolean {
   return isMissingApiKey(env.ANTHROPIC_API_KEY);
 }
 
-/** Returns true when OpenAI transcription should use mock responses. */
-export function isOpenAIMockMode(): boolean {
+/** Returns true when speech transcription should use mock responses. */
+export function isTranscriptionMockMode(): boolean {
   if (env.MOCK_MODE === "true") return true;
-  return isMissingApiKey(env.OPENAI_API_KEY);
+  return isMissingApiKey(env.DEEPGRAM_API_KEY);
+}
+
+/** Backward-compatible alias for legacy imports. */
+export function isOpenAIMockMode(): boolean {
+  return isTranscriptionMockMode();
 }

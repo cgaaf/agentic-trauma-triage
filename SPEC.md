@@ -640,7 +640,7 @@ missingFieldWarnings: string[]
 
 ### Phase 3: Speech, Rate Limiting & Polish
 
-- **Speech input**: OpenAI `gpt-4o-transcribe` via the Transcription API (`/v1/audio/transcriptions`) with push-to-talk and `stream=true` for real-time text output. Medical terminology prompting (e.g., "EMS trauma report with terms like GCS, SBP, intubation, pneumothorax, TBSA") improves clinical accuracy. Future enhancement: Realtime API WebSocket streaming with built-in noise reduction for noisy field environments.
+- **Speech input**: Deepgram `nova-3-medical` via low-latency WebSocket streaming for real-time text updates while speaking. Recognition is biased with spoken EMS shorthand/slang keyterm steering (e.g., GCS, SBP/BP, EtOH, GSW, MVC, MCC, peds) rather than instruction-style prompting.
 - **Basic rate limiting**: 10 requests/minute per IP to prevent abuse
 - **Print/export**: Print-friendly CSS or PDF export
 - **Enhanced accessibility**: WCAG 2.1 AA compliance, screen reader support, keyboard navigation improvements

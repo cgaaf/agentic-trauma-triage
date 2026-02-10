@@ -16,10 +16,20 @@
 		globalThis.fetch = async (input, init) => {
 			const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 			if (url.includes('/api/transcribe/session')) {
-				return new Response(JSON.stringify({ client_secret: null, mock: true }), {
+				return new Response(
+					JSON.stringify({
+						mock: true,
+						provider: 'deepgram',
+						temporary_token: null,
+						model: 'nova-3-medical',
+						language: 'en-US',
+						keyterms: [],
+					}),
+					{
 					status: 200,
 					headers: { 'Content-Type': 'application/json' },
-				});
+					},
+				);
 			}
 			return origFetch(input, init);
 		};
