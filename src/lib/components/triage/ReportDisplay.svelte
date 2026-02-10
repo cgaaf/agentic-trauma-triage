@@ -17,7 +17,7 @@
 		animatedHeight = startHeight;
 		await tick();
 
-		containerEl.offsetHeight; // force reflow
+		void containerEl.offsetHeight; // force reflow
 		animatedHeight = endHeight;
 	}
 </script>

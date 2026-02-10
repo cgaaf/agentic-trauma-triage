@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm fmt",
+            "async": false,
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

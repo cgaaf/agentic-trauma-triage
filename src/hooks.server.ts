@@ -1,10 +1,11 @@
 import type { Handle } from "@sveltejs/kit";
+import { dev } from "$app/environment";
 import { json } from "@sveltejs/kit";
 import { env } from "$env/dynamic/private";
 import { createRateLimiter, type RateLimiter } from "$lib/server/rate-limiter.js";
 
 /**
- * Soft in-memory rate limiter for /api/triage.
+ * Soft in-memory rate limiter for protected API endpoints (/api/triage, /api/transcribe/session).
  *
  * ── Configuration (environment variables, required) ─────────────────
  *
@@ -56,13 +57,55 @@ function getLimiter(): RateLimiter {
   return limiter;
 }
 
+/**
+ * Validates the Origin header on protected POST endpoints.
+ *
+ * Browsers always send an Origin header on POST requests, so its absence
+ * indicates a non-browser client (curl, scripts). Rejecting mismatched or
+ * missing Origins prevents cross-origin abuse of our proxied API endpoints.
+ */
+export function isOriginAllowed(requestOrigin: string | null, canonicalOrigin: string): boolean {
+  if (!requestOrigin) return false;
+
+  // Exact match against the canonical origin (derived from Host header)
+  if (requestOrigin === canonicalOrigin) return true;
+
+  // Optional override for custom domains / preview deploys.
+  // NOTE: This supports a single origin only (exact string match).
+  // Comma-separated or multiple origins are NOT parsed.
+  // TODO: If multiple allowed origins are needed (e.g. several preview
+  //       deploy URLs), split on "," and check set membership instead.
+  const allowedOverride = env.ALLOWED_ORIGIN;
+  if (allowedOverride && requestOrigin === allowedOverride) return true;
+
+  // In dev mode, allow any localhost origin (different ports for Vite, Storybook, etc.)
+  if (dev) {
+    try {
+      const url = new URL(requestOrigin);
+      return url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
-  if (event.url.pathname === "/api/triage" && event.request.method === "POST") {
+  const protectedPaths = ["/api/triage", "/api/transcribe/session"];
+  if (protectedPaths.includes(event.url.pathname) && event.request.method === "POST") {
+    // ── Origin validation (CSRF protection) ──────────────────────────
+    const requestOrigin = event.request.headers.get("origin");
+    if (!isOriginAllowed(requestOrigin, event.url.origin)) {
+      return json({ error: "Forbidden: invalid origin." }, { status: 403 });
+    }
+
+    // ── Rate limiting ────────────────────────────────────────────────
     let ip: string;
     try {
       ip = event.getClientAddress();
-    } catch {
-      // If IP resolution fails (e.g. misconfigured proxy), fail open
+    } catch (err) {
+      console.warn("[hooks] getClientAddress() failed — rate limiting bypassed:", err);
       return resolve(event);
     }
 

@@ -324,13 +324,13 @@ Both sections are collapsed by default, reducing visual noise for experienced us
 - **Relevance gate**: If the input is not a trauma/EMS report, an error is shown without running evaluation.
 - **No other blocking validation**: Missing fields (SBP, HR, etc.) trigger warnings but do not block submission.
 
-### No Speech Input (MVP)
+### Speech Input
 
-Speech-to-text input via microphone is deferred to a future phase.
+Speech-to-text input is available via a microphone button in the input area. It uses Deepgram's Nova 3 Medical model for real-time streaming transcription with EMS-specific keyword boosting. Recordings auto-stop after silence detection or the maximum duration, then auto-submit if the transcript has sufficient content.
 
-### No Example Reports
+### Example Reports
 
-No pre-built example reports or templates. The progressive disclosure helper provides sufficient guidance.
+Pre-built example reports are available as clickable chips below the input area when empty. They demonstrate the expected input format and let new users quickly test the system.
 
 ---
 
@@ -452,7 +452,6 @@ Minimal header bar containing:
 - **New Triage button**: Stethoscope icon + "New Triage" label, appears only after triage completes (see New Triage Behavior)
 - **Dark mode toggle**: Sun/moon icon (using mode-watcher)
 - **History button**: Clock icon that opens a drawer (future phase — not currently displayed)
-- **Mock mode indicator**: Purple badge showing "MOCK MODE" when active
 
 ### Visual Tone
 
@@ -513,33 +512,12 @@ Out-of-range values generate visual warnings but do NOT block evaluation. The va
 
 ---
 
-## 10. Mock Mode
-
-### Activation
-
-- **Auto-detect**: When `ANTHROPIC_API_KEY` is not set, mock mode activates automatically
-- **Manual override**: Set `MOCK_MODE=true` in `.env` to force mock mode even when an API key exists
-- Both conditions trigger mock mode
-
-### Behavior
-
-- **Deterministic engine runs for real** against the actual CSV criteria data
-- **LLM calls are mocked**: Extraction uses regex-based field parsing; evaluation returns empty matches with a "mock mode" reasoning note
-- **Simulated delays**: 500ms delay on mock LLM calls so the progress UI can be observed
-
-### Visual Indicator
-
-A purple "MOCK MODE" badge in the header when mock mode is active. Prevents confusion about whether results include real LLM analysis.
-
----
-
-## 11. MVP Scope
+## 10. MVP Scope
 
 ### Included in MVP
 
 - Core triage pipeline (input → extraction → parallel evaluation → results)
 - Full UI (header, input, results display, progress indicator, all display components)
-- Mock mode (auto-detect + env override)
 - Dark mode toggle
 - Unit tests for deterministic engine
 
@@ -548,8 +526,6 @@ A purple "MOCK MODE" badge in the header when mock mode is active. Prevents conf
 - Browser-local history (localStorage + drawer UI)
 - Editable recognized inputs with "Re-evaluate" button
 - Smart re-run logic (vitals→deterministic only, mechanism→LLM only, age→full re-run)
-- Speech-to-text input
-- Rate limiting
 - Print/export functionality
 - Enhanced accessibility (WCAG compliance)
 
@@ -640,7 +616,7 @@ missingFieldWarnings: string[]
 
 ### Phase 3: Speech, Rate Limiting & Polish
 
-- **Speech input**: OpenAI `gpt-4o-transcribe` via the Transcription API (`/v1/audio/transcriptions`) with push-to-talk and `stream=true` for real-time text output. Medical terminology prompting (e.g., "EMS trauma report with terms like GCS, SBP, intubation, pneumothorax, TBSA") improves clinical accuracy. Future enhancement: Realtime API WebSocket streaming with built-in noise reduction for noisy field environments.
+- **Speech input**: Deepgram `nova-3-medical` via low-latency WebSocket streaming for real-time text updates while speaking. Recognition is biased with spoken EMS shorthand/slang keyterm steering (e.g., GCS, SBP/BP, EtOH, GSW, MVC, MCC, peds) rather than instruction-style prompting.
 - **Basic rate limiting**: 10 requests/minute per IP to prevent abuse
 - **Print/export**: Print-friendly CSS or PDF export
 - **Enhanced accessibility**: WCAG 2.1 AA compliance, screen reader support, keyboard navigation improvements

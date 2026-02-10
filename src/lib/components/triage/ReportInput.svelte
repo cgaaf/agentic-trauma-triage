@@ -12,8 +12,12 @@
 		Stethoscope,
 		Zap,
 		Sparkles,
+		Mic,
+		Square,
+		Loader2,
 	} from '@lucide/svelte';
 	import { exampleReports } from '$lib/data/example-reports.js';
+	import { AudioRecorder, MAX_DURATION_S } from '$lib/audio/recorder.svelte.js';
 
 	let {
 		value = $bindable(''),
@@ -29,7 +33,19 @@
 	let whatToIncludeOpen = $state(false);
 	let howItWorksOpen = $state(false);
 
-	const showExamples = $derived(!value.trim() && !loading);
+	const recorder = new AudioRecorder();
+
+	recorder.onTranscript = (text: string) => {
+		value = text;
+	};
+
+	recorder.onRecordingComplete = () => {
+		if (value.trim().split(/\s+/).length >= 3) {
+			handleSubmit();
+		}
+	};
+
+	const showExamples = $derived(!value.trim() && !loading && recorder.isIdle);
 
 	async function selectExample(text: string) {
 		const el = textareaRef;
@@ -64,6 +80,16 @@
 			handleSubmit();
 		}
 	}
+
+	function formatDuration(seconds: number): string {
+		const m = Math.floor(seconds / 60);
+		const s = seconds % 60;
+		return `${m}:${String(s).padStart(2, '0')}`;
+	}
+
+	$effect(() => {
+		return () => recorder.destroy();
+	});
 </script>
 
 <div class="w-full space-y-3">
@@ -79,20 +105,63 @@
 			placeholder="Describe the patient, their vitals, and what happened..."
 			rows={1}
 			class="min-h-0 resize-none rounded-2xl border-none bg-transparent pt-4 pb-14 text-base shadow-none focus-visible:border-transparent focus-visible:ring-0"
-			disabled={loading}
+			disabled={loading || !recorder.isIdle}
 		/>
-		<div class="absolute bottom-3 right-3">
-			<Button
-				size="icon"
-				class="rounded-full"
-				onclick={handleSubmit}
-				disabled={loading || !value.trim()}
-			>
-				<SendHorizonal class="size-4" />
-				<span class="sr-only">Evaluate</span>
-			</Button>
+		<div class="absolute bottom-3 right-3 flex items-center gap-2">
+			{#if recorder.isConnecting}
+				<Button size="icon" class="rounded-full" disabled>
+					<Loader2 class="size-4 animate-spin" />
+					<span class="sr-only">Connecting</span>
+				</Button>
+			{:else if recorder.isRecording}
+				<span class="font-mono text-sm tabular-nums text-destructive">
+					{formatDuration(recorder.remaining)}
+				</span>
+				<Button
+					size="icon"
+					variant="destructive"
+					class="rounded-full"
+					onclick={() => recorder.stop()}
+				>
+					<Square class="size-3.5 fill-current" />
+					<span class="sr-only">Stop recording</span>
+				</Button>
+			{:else if value.trim()}
+				<Button
+					size="icon"
+					class="rounded-full"
+					onclick={handleSubmit}
+					disabled={loading}
+				>
+					<SendHorizonal class="size-4" />
+					<span class="sr-only">Evaluate</span>
+				</Button>
+			{:else}
+				<Button
+					size="icon"
+					variant="outline"
+					class="rounded-full"
+					onclick={() => recorder.start().catch(() => {})}
+					disabled={loading}
+				>
+					<Mic class="size-4" />
+					<span class="sr-only">Record audio</span>
+				</Button>
+			{/if}
 		</div>
+		{#if recorder.isRecording}
+			<div class="absolute right-0 bottom-0 left-0 h-1 overflow-hidden rounded-b-2xl bg-muted">
+				<div
+					class="h-full bg-destructive transition-all duration-1000 ease-linear"
+					style="width: {recorder.progress * 100}%"
+				></div>
+			</div>
+		{/if}
 	</div>
+
+	{#if recorder.error}
+		<p class="text-sm text-destructive">{recorder.error}</p>
+	{/if}
 
 	{#if showExamples}
 		<div class="flex flex-wrap items-center justify-center gap-2" transition:slide={{ duration: 200 }}>

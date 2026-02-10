@@ -8,10 +8,7 @@ import {
   determineActivationLevel,
   buildJustification,
 } from "$lib/server/engine/merge.js";
-import { isMockMode } from "$lib/server/config.js";
-
 export async function* runPipeline(report: string): AsyncGenerator<SSEEvent> {
-  const mockMode = isMockMode();
   let fields: ExtractedFields;
   let isTraumaReport: boolean;
 
@@ -19,17 +16,10 @@ export async function* runPipeline(report: string): AsyncGenerator<SSEEvent> {
   yield { type: "phase", phase: "extracting" };
 
   try {
-    if (mockMode) {
-      const { mockExtract } = await import("$lib/server/mock/mock-extraction.js");
-      const result = await mockExtract(report);
-      fields = result.fields;
-      isTraumaReport = result.isTraumaReport;
-    } else {
-      const { extractFields } = await import("$lib/server/llm/extraction.js");
-      const result = await extractFields(report);
-      fields = result.fields;
-      isTraumaReport = result.isTraumaReport;
-    }
+    const { extractFields } = await import("$lib/server/llm/extraction.js");
+    const result = await extractFields(report);
+    fields = result.fields;
+    isTraumaReport = result.isTraumaReport;
   } catch (error) {
     yield {
       type: "error",
@@ -79,13 +69,9 @@ export async function* runPipeline(report: string): AsyncGenerator<SSEEvent> {
     reasoning: string;
   }>;
 
-  if (mockMode) {
-    llmPromise = import("$lib/server/mock/mock-evaluation.js").then((m) => m.mockEvaluate());
-  } else {
-    llmPromise = import("$lib/server/llm/evaluation.js").then((m) =>
-      m.evaluateWithLlm(fields, llmOnlyCriteria, hybridCriteria),
-    );
-  }
+  llmPromise = import("$lib/server/llm/evaluation.js").then((m) =>
+    m.evaluateWithLlm(fields, llmOnlyCriteria, hybridCriteria),
+  );
 
   // ─── Phase 2a: Deterministic (instant, synchronous) ─────────────
   yield { type: "phase", phase: "evaluating_vitals" };
@@ -142,9 +128,7 @@ export async function* runPipeline(report: string): AsyncGenerator<SSEEvent> {
   if (fields.rr === null)
     missingFieldWarnings.push("Respiratory rate not reported, which may result in under-triage.");
   if (fields.gcs === null)
-    missingFieldWarnings.push(
-      "Glasgow Coma Scale not reported, which may result in under-triage.",
-    );
+    missingFieldWarnings.push("Glasgow Coma Scale not reported, which may result in under-triage.");
 
   yield { type: "phase", phase: "complete" };
   yield {

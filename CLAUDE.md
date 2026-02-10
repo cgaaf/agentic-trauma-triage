@@ -14,7 +14,7 @@ pnpm lint:fix                        # Auto-fix lint issues
 pnpm fmt                             # Format with oxfmt
 pnpm fmt:check                       # Check formatting
 pnpm test                            # Run all vitest projects once
-pnpm vitest run --project server     # Quick server tests only (~47 tests)
+pnpm vitest run --project server     # Quick server tests only (~92 tests)
 pnpm storybook                       # Storybook dev on port 6006
 ```
 
@@ -31,10 +31,6 @@ SvelteKit 2 app that triages trauma patients by evaluating EMS narratives agains
 
 All phases stream as discriminated-union SSE events from `src/lib/server/pipeline.ts`. Gates: `isTraumaReport` (relevance) and `age` (required) checked after extraction.
 
-### Mock Mode
-
-Auto-enabled when `ANTHROPIC_API_KEY` is missing or placeholder. Uses regex-based extraction and fake evaluation results for development without API access.
-
 ### Key Source Locations
 
 - **Criteria**: `src/lib/server/criteria/criteria.ts` — 137 criteria (20 deterministic, 2 hybrid, 115 LLM-only), each with activation level and age range
@@ -44,6 +40,8 @@ Auto-enabled when `ANTHROPIC_API_KEY` is missing or placeholder. Uses regex-base
 - **Merge logic**: `src/lib/server/engine/merge.ts` — combines results, determines activation level
 - **Client state**: `src/lib/state/triage.svelte.ts` — Svelte 5 `$state` class pattern (not stores)
 - **API route**: `src/routes/api/triage/+server.ts` — SSE POST endpoint
+- **Transcription session**: `src/routes/api/transcribe/session/+server.ts` — Deepgram temporary token grant + stream config payload
+- **Audio recorder**: `src/lib/audio/recorder.svelte.ts` — browser `MediaRecorder` + Deepgram WebSocket realtime transcription
 - **UI components**: `src/lib/components/triage/` — domain-specific components with Storybook stories
 
 ## Tech Stack & Patterns
