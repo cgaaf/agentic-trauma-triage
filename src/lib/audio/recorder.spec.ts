@@ -30,6 +30,10 @@ const mockSdkState = vi.hoisted(() => ({
   activeConnection: null as MockConnection | null,
 }));
 
+let fetchMock: ReturnType<typeof vi.fn>;
+let getUserMediaMock: ReturnType<typeof vi.fn>;
+let streamTrackStop: ReturnType<typeof vi.fn>;
+
 function createMockConnection(): MockConnection {
   const handlers = new Map<string, EventHandler[]>();
 
@@ -129,8 +133,15 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-async function startRecorder(recorder: AudioRecorder) {
-  const startPromise = recorder.start();
+function sessionResponse(body: Record<string, unknown>, status = 200, statusText = "OK"): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    statusText,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function waitForConnectionInitialization() {
   for (let attempts = 0; attempts < 10 && !mockSdkState.activeConnection; attempts += 1) {
     await Promise.resolve();
   }
@@ -139,8 +150,15 @@ async function startRecorder(recorder: AudioRecorder) {
     throw new Error("Deepgram connection was not initialized.");
   }
 
-  mockSdkState.activeConnection.emit(mockSdkState.events.Open);
+  return mockSdkState.activeConnection;
+}
+
+async function startRecorder(recorder: AudioRecorder) {
+  const startPromise = recorder.start();
+  const connection = await waitForConnectionInitialization();
+  connection.emit(mockSdkState.events.Open);
   await startPromise;
+  return connection;
 }
 
 beforeEach(() => {
@@ -151,34 +169,27 @@ beforeEach(() => {
   MockMediaRecorder.finalChunk = null;
   MockMediaRecorder.stopDelayMs = 0;
 
-  const track = { stop: vi.fn() };
+  streamTrackStop = vi.fn();
+  const track = { stop: streamTrackStop };
   const stream = {
     getTracks: () => [track],
   } as unknown as MediaStream;
 
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(
-      async () =>
-        new Response(
-          JSON.stringify({
-            provider: "deepgram",
-            temporary_token: "token",
-            model: "nova-3-medical",
-            language: "en-US",
-            keyterms: [],
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          },
-        ),
-    ),
+  fetchMock = vi.fn(async () =>
+    sessionResponse({
+      provider: "deepgram",
+      temporary_token: "token",
+      model: "nova-3-medical",
+      language: "en-US",
+      keyterms: [],
+    }),
   );
+  vi.stubGlobal("fetch", fetchMock);
 
+  getUserMediaMock = vi.fn(async () => stream);
   vi.stubGlobal("navigator", {
     mediaDevices: {
-      getUserMedia: vi.fn(async () => stream),
+      getUserMedia: getUserMediaMock,
     },
   });
   vi.stubGlobal("MediaRecorder", MockMediaRecorder as unknown as typeof MediaRecorder);
@@ -256,5 +267,149 @@ describe("AudioRecorder stop sequencing", () => {
 
     await vi.advanceTimersByTimeAsync(1);
     expect(mockSdkState.activeConnection!.finalize).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("AudioRecorder startup and lifecycle", () => {
+  it("returns to idle with server error when session creation fails", async () => {
+    fetchMock.mockResolvedValueOnce(
+      sessionResponse({ error: "Session creation failed from API" }, 502, "Bad Gateway"),
+    );
+    const recorder = new AudioRecorder();
+
+    await recorder.start();
+
+    expect(recorder.isIdle).toBe(true);
+    expect(recorder.error).toBe("Session creation failed from API");
+    expect(mockSdkState.activeConnection).toBeNull();
+  });
+
+  it("returns to idle and releases media when temporary token is missing", async () => {
+    fetchMock.mockResolvedValueOnce(
+      sessionResponse({
+        provider: "deepgram",
+        model: "nova-3-medical",
+        language: "en-US",
+        keyterms: [],
+      }),
+    );
+    const recorder = new AudioRecorder();
+
+    await recorder.start();
+
+    expect(recorder.isIdle).toBe(true);
+    expect(recorder.error).toBe("No transcription token returned by server.");
+    expect(streamTrackStop).toHaveBeenCalledTimes(1);
+    expect(mockSdkState.activeConnection).toBeNull();
+  });
+
+  it("maps NotAllowedError from getUserMedia to a permission message", async () => {
+    getUserMediaMock.mockRejectedValueOnce(new DOMException("Denied", "NotAllowedError"));
+    const recorder = new AudioRecorder();
+
+    await recorder.start();
+
+    expect(recorder.isIdle).toBe(true);
+    expect(recorder.error).toBe(
+      "Microphone access denied. Please allow microphone permission and try again.",
+    );
+  });
+
+  it("maps NotFoundError from getUserMedia to a missing microphone message", async () => {
+    getUserMediaMock.mockRejectedValueOnce(new DOMException("No device", "NotFoundError"));
+    const recorder = new AudioRecorder();
+
+    await recorder.start();
+
+    expect(recorder.isIdle).toBe(true);
+    expect(recorder.error).toBe("No microphone found. Please connect a microphone and try again.");
+  });
+
+  it("handles websocket errors before Open by returning to idle with formatted error", async () => {
+    const recorder = new AudioRecorder();
+    const startPromise = recorder.start();
+    const connection = await waitForConnectionInitialization();
+
+    connection.emit(mockSdkState.events.Error, { statusCode: 401 });
+    await startPromise;
+
+    expect(recorder.isIdle).toBe(true);
+    expect(recorder.error).toBe("Transcription connection failed (401).");
+    expect(connection.requestClose).toHaveBeenCalledTimes(1);
+    expect(connection.disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("cleans up and surfaces error when keep-alive fails during recording", async () => {
+    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const recorder = new AudioRecorder();
+    const connection = await startRecorder(recorder);
+    connection.keepAlive.mockImplementation(() => {
+      throw new Error("network lost");
+    });
+
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    expect(recorder.isIdle).toBe(true);
+    expect(recorder.error).toBe("Connection to transcription service lost.");
+    expect(connection.requestClose).toHaveBeenCalledTimes(1);
+    expect(connection.disconnect).toHaveBeenCalledTimes(1);
+    consoleWarnSpy.mockRestore();
+  });
+
+  it("deduplicates consecutive duplicate final transcript segments", async () => {
+    const recorder = new AudioRecorder();
+    const onTranscript = vi.fn();
+    recorder.onTranscript = onTranscript;
+    const connection = await startRecorder(recorder);
+
+    connection.emit(mockSdkState.events.Transcript, {
+      channel: { alternatives: [{ transcript: "Patient GCS twelve" }] },
+      is_final: true,
+    });
+    connection.emit(mockSdkState.events.Transcript, {
+      channel: { alternatives: [{ transcript: "Patient GCS twelve" }] },
+      is_final: true,
+    });
+    connection.emit(mockSdkState.events.Transcript, {
+      channel: { alternatives: [{ transcript: "SBP ninety" }] },
+      is_final: true,
+    });
+
+    expect(onTranscript).toHaveBeenCalledTimes(2);
+    expect(onTranscript.mock.calls[0]?.[0]).toBe("Patient GCS twelve");
+    expect(onTranscript.mock.calls[1]?.[0]).toBe("Patient GCS twelve SBP ninety");
+  });
+
+  it("destroy tears down resources without calling completion callback", async () => {
+    const recorder = new AudioRecorder();
+    const onComplete = vi.fn();
+    recorder.onRecordingComplete = onComplete;
+    const connection = await startRecorder(recorder);
+
+    recorder.destroy();
+
+    expect(recorder.isIdle).toBe(true);
+    expect(streamTrackStop).toHaveBeenCalledTimes(1);
+    expect(connection.requestClose).toHaveBeenCalledTimes(1);
+    expect(connection.disconnect).toHaveBeenCalledTimes(1);
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("swallows onRecordingComplete callback errors during stop", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const recorder = new AudioRecorder();
+    const onComplete = vi.fn(() => {
+      throw new Error("callback failed");
+    });
+    recorder.onRecordingComplete = onComplete;
+    await startRecorder(recorder);
+
+    recorder.stop();
+    await vi.runAllTimersAsync();
+
+    expect(recorder.isIdle).toBe(true);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    consoleErrorSpy.mockRestore();
   });
 });
