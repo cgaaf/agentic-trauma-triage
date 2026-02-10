@@ -5,8 +5,8 @@
 	import { sampleReport } from './_storybook/mock-data.js';
 
 	/**
-	 * Stubs fetch and getUserMedia so AudioRecorder enters mock mode
-	 * without hitting real APIs. Returns a cleanup function.
+	 * Stubs fetch and getUserMedia for Storybook isolation so stories
+	 * don't hit real APIs. Returns a cleanup function.
 	 */
 	function mockTranscriptionAPIs(options: { rejectMic?: boolean } = {}) {
 		const { rejectMic = false } = options;
@@ -18,9 +18,8 @@
 			if (url.includes('/api/transcribe/session')) {
 				return new Response(
 					JSON.stringify({
-						mock: true,
 						provider: 'deepgram',
-						temporary_token: null,
+						temporary_token: 'storybook-fake-token',
 						model: 'nova-3-medical',
 						language: 'en-US',
 						keyterms: [],
@@ -88,23 +87,6 @@
 		</div>
 	{/snippet}
 </Story>
-
-<Story
-	name="MockTranscription"
-	args={{ value: '', loading: false }}
-	parameters={{ test: { timeout: 15_000 } }}
-	play={async ({ canvasElement }) => {
-		const canvas = within(canvasElement);
-		const cleanup = mockTranscriptionAPIs();
-		try {
-			const micButton = canvas.getByRole('button', { name: 'Record audio' });
-			await userEvent.click(micButton);
-			await canvas.findByRole('button', { name: 'Stop recording' });
-		} finally {
-			cleanup();
-		}
-	}}
-/>
 
 <Story name="RealTranscription">
 	{#snippet children()}

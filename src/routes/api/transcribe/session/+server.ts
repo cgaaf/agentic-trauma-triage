@@ -1,7 +1,6 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types.js";
 import { env } from "$env/dynamic/private";
-import { isTranscriptionMockMode } from "$lib/server/config.js";
 import {
   normalizeDeepgramApiKey,
   buildDeepgramAuthHeaders,
@@ -68,17 +67,6 @@ async function requestDeepgramGrant(authHeader: string): Promise<DeepgramGrantAt
 }
 
 export const POST: RequestHandler = async () => {
-  if (isTranscriptionMockMode()) {
-    return json({
-      mock: true,
-      provider: "deepgram",
-      temporary_token: null,
-      model: DEEPGRAM_MODEL,
-      language: DEEPGRAM_LANGUAGE,
-      keyterms: [...EMS_SPOKEN_KEYTERMS],
-    });
-  }
-
   try {
     const apiKey = normalizeDeepgramApiKey(env.DEEPGRAM_API_KEY);
     if (!apiKey) {
@@ -116,7 +104,6 @@ export const POST: RequestHandler = async () => {
     }
 
     return json({
-      mock: false,
       provider: "deepgram",
       temporary_token: accessToken,
       model: DEEPGRAM_MODEL,

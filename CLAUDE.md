@@ -31,10 +31,6 @@ SvelteKit 2 app that triages trauma patients by evaluating EMS narratives agains
 
 All phases stream as discriminated-union SSE events from `src/lib/server/pipeline.ts`. Gates: `isTraumaReport` (relevance) and `age` (required) checked after extraction.
 
-### Mock Mode
-
-Auto-enabled when `ANTHROPIC_API_KEY` is missing or placeholder. Uses regex-based extraction and fake evaluation results for development without API access.
-
 ### Key Source Locations
 
 - **Criteria**: `src/lib/server/criteria/criteria.ts` — 137 criteria (20 deterministic, 2 hybrid, 115 LLM-only), each with activation level and age range

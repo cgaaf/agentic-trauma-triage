@@ -452,7 +452,7 @@ Minimal header bar containing:
 - **New Triage button**: Stethoscope icon + "New Triage" label, appears only after triage completes (see New Triage Behavior)
 - **Dark mode toggle**: Sun/moon icon (using mode-watcher)
 - **History button**: Clock icon that opens a drawer (future phase — not currently displayed)
-- **Mock mode indicator**: Purple badge showing "MOCK MODE" when active
+
 
 ### Visual Tone
 
@@ -513,33 +513,12 @@ Out-of-range values generate visual warnings but do NOT block evaluation. The va
 
 ---
 
-## 10. Mock Mode
-
-### Activation
-
-- **Auto-detect**: When `ANTHROPIC_API_KEY` is not set, mock mode activates automatically
-- **Manual override**: Set `MOCK_MODE=true` in `.env` to force mock mode even when an API key exists
-- Both conditions trigger mock mode
-
-### Behavior
-
-- **Deterministic engine runs for real** against the actual CSV criteria data
-- **LLM calls are mocked**: Extraction uses regex-based field parsing; evaluation returns empty matches with a "mock mode" reasoning note
-- **Simulated delays**: 500ms delay on mock LLM calls so the progress UI can be observed
-
-### Visual Indicator
-
-A purple "MOCK MODE" badge in the header when mock mode is active. Prevents confusion about whether results include real LLM analysis.
-
----
-
-## 11. MVP Scope
+## 10. MVP Scope
 
 ### Included in MVP
 
 - Core triage pipeline (input → extraction → parallel evaluation → results)
 - Full UI (header, input, results display, progress indicator, all display components)
-- Mock mode (auto-detect + env override)
 - Dark mode toggle
 - Unit tests for deterministic engine
 

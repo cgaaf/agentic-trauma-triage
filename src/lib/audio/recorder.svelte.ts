@@ -9,7 +9,6 @@ import {
 export type RecorderState = "idle" | "connecting" | "recording";
 
 type TranscribeSessionResponse = {
-  mock?: boolean;
   provider?: "deepgram" | string;
   temporary_token?: string | null;
   model?: string;
@@ -25,13 +24,6 @@ const MEDIA_CHUNK_MS = 250;
 const MEDIA_STOP_TIMEOUT_MS = 1_000;
 const CHUNK_FLUSH_TIMEOUT_MS = 1_000;
 const SESSION_ENDPOINT = "/api/transcribe/session";
-
-const MOCK_NARRATIVE =
-  "45-year-old male involved in a high-speed MVC, " +
-  "unrestrained driver. GCS 12, SBP 88, HR 120, RR 28. " +
-  "Obvious deformity to the left femur with significant swelling. " +
-  "Complaining of chest pain with decreased breath sounds on the left side. " +
-  "Two large-bore IVs established, one liter normal saline bolus initiated.";
 
 export class AudioRecorder {
   state = $state<RecorderState>("idle");
@@ -52,7 +44,6 @@ export class AudioRecorder {
   #silenceTimer: ReturnType<typeof setTimeout> | null = null;
   #keepAliveTimer: ReturnType<typeof setInterval> | null = null;
   #hasTranscription = false;
-  #mockInterval: ReturnType<typeof setInterval> | null = null;
   #stopRequested = false;
   #finalizing = false;
   #stopSequencePromise: Promise<void> | null = null;
@@ -124,11 +115,6 @@ export class AudioRecorder {
       return;
     }
 
-    if (session.mock === true) {
-      this.#startMock();
-      return;
-    }
-
     if (!session.temporary_token) {
       this.error = "No transcription token returned by server.";
       this.#releaseMedia();
@@ -155,22 +141,12 @@ export class AudioRecorder {
     if (this.#stopRequested || this.#finalizing) return;
     this.#stopRequested = true;
 
-    if (this.#mockInterval !== null) {
-      clearInterval(this.#mockInterval);
-      this.#mockInterval = null;
-    }
-
     void this.#runStopSequence();
   }
 
   destroy() {
     this.#stopRequested = true;
     this.#finalizing = true;
-
-    if (this.#mockInterval !== null) {
-      clearInterval(this.#mockInterval);
-      this.#mockInterval = null;
-    }
 
     this.#stopMonitoring();
     this.#stopMediaRecorder();
@@ -576,35 +552,6 @@ export class AudioRecorder {
       clearTimeout(this.#silenceTimer);
       this.#silenceTimer = null;
     }
-  }
-
-  // ── Mock mode ───────────────────────────────────────────────────
-
-  #startMock() {
-    this.state = "recording";
-    this.#startTime = Date.now();
-    this.duration = 0;
-    this.#tick();
-
-    const words = MOCK_NARRATIVE.split(" ");
-    let wordIndex = 0;
-
-    this.#mockInterval = setInterval(() => {
-      if (wordIndex >= words.length) {
-        clearInterval(this.#mockInterval!);
-        this.#mockInterval = null;
-        setTimeout(() => {
-          if (!this.#stopRequested && !this.#finalizing) this.#autoStop();
-        }, 500);
-        return;
-      }
-
-      if (wordIndex > 0) this.#transcript += " ";
-      this.#transcript += words[wordIndex];
-      wordIndex++;
-      this.#hasTranscription = true;
-      this.onTranscript?.(this.#transcript);
-    }, 150);
   }
 
   // ── Duration tick and auto-stop ─────────────────────────────────
