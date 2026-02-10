@@ -2,6 +2,12 @@ import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types.js";
 import { env } from "$env/dynamic/private";
 import { isTranscriptionMockMode } from "$lib/server/config.js";
+import {
+  normalizeDeepgramApiKey,
+  buildDeepgramAuthHeaders,
+  summarizeDeepgramGrantError,
+  type DeepgramGrantAttempt,
+} from "./helpers.js";
 
 const DEEPGRAM_GRANT_URL = "https://api.deepgram.com/v1/auth/grant";
 const DEEPGRAM_MODEL = "nova-3-medical";
@@ -29,27 +35,6 @@ type DeepgramGrantResponse = {
   access_token?: string;
   expires_in?: number | null;
 };
-
-type DeepgramGrantAttempt = {
-  ok: boolean;
-  status: number;
-  statusText: string;
-  bodyText: string;
-  accessToken: string | null;
-};
-
-function normalizeDeepgramApiKey(raw: string | undefined): string {
-  if (!raw) return "";
-
-  const trimmed = raw.trim().replace(/^["']|["']$/g, "");
-  if (!trimmed) return "";
-
-  return trimmed.replace(/^(Token|Bearer)\s+/i, "").trim();
-}
-
-function buildDeepgramAuthHeaders(apiKey: string): string[] {
-  return [`Token ${apiKey}`, apiKey];
-}
 
 async function requestDeepgramGrant(authHeader: string): Promise<DeepgramGrantAttempt> {
   const response = await fetch(DEEPGRAM_GRANT_URL, {
@@ -80,23 +65,6 @@ async function requestDeepgramGrant(authHeader: string): Promise<DeepgramGrantAt
     bodyText,
     accessToken,
   };
-}
-
-function summarizeDeepgramGrantError(attempts: DeepgramGrantAttempt[]): string {
-  const primary = attempts[0];
-  if (!primary) {
-    return "Failed to create transcription session.";
-  }
-
-  if (primary.status === 401 || primary.status === 403) {
-    return "Deepgram authentication failed. Check DEEPGRAM_API_KEY and ensure it has Member role or higher.";
-  }
-
-  if (primary.status >= 500) {
-    return "Deepgram temporary token service is unavailable. Please try again.";
-  }
-
-  return `Deepgram token grant failed (${primary.status} ${primary.statusText}).`;
 }
 
 export const POST: RequestHandler = async () => {
