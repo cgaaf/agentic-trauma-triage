@@ -324,13 +324,13 @@ Both sections are collapsed by default, reducing visual noise for experienced us
 - **Relevance gate**: If the input is not a trauma/EMS report, an error is shown without running evaluation.
 - **No other blocking validation**: Missing fields (SBP, HR, etc.) trigger warnings but do not block submission.
 
-### No Speech Input (MVP)
+### Speech Input
 
-Speech-to-text input via microphone is deferred to a future phase.
+Speech-to-text input is available via a microphone button in the input area. It uses Deepgram's Nova 3 Medical model for real-time streaming transcription with EMS-specific keyword boosting. Recordings auto-stop after silence detection or the maximum duration, then auto-submit if the transcript has sufficient content.
 
-### No Example Reports
+### Example Reports
 
-No pre-built example reports or templates. The progressive disclosure helper provides sufficient guidance.
+Pre-built example reports are available as clickable chips below the input area when empty. They demonstrate the expected input format and let new users quickly test the system.
 
 ---
 
@@ -548,8 +548,6 @@ A purple "MOCK MODE" badge in the header when mock mode is active. Prevents conf
 - Browser-local history (localStorage + drawer UI)
 - Editable recognized inputs with "Re-evaluate" button
 - Smart re-run logic (vitals→deterministic only, mechanism→LLM only, age→full re-run)
-- Speech-to-text input
-- Rate limiting
 - Print/export functionality
 - Enhanced accessibility (WCAG compliance)
 

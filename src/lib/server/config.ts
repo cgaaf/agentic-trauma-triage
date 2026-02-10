@@ -22,8 +22,3 @@ export function isTranscriptionMockMode(): boolean {
   if (env.MOCK_MODE === "true") return true;
   return isMissingApiKey(env.DEEPGRAM_API_KEY);
 }
-
-/** Backward-compatible alias for legacy imports. */
-export function isOpenAIMockMode(): boolean {
-  return isTranscriptionMockMode();
-}

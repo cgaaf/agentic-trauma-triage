@@ -14,7 +14,7 @@ pnpm lint:fix                        # Auto-fix lint issues
 pnpm fmt                             # Format with oxfmt
 pnpm fmt:check                       # Check formatting
 pnpm test                            # Run all vitest projects once
-pnpm vitest run --project server     # Quick server tests only (~47 tests)
+pnpm vitest run --project server     # Quick server tests only (~92 tests)
 pnpm storybook                       # Storybook dev on port 6006
 ```
 
@@ -46,7 +46,6 @@ Auto-enabled when `ANTHROPIC_API_KEY` is missing or placeholder. Uses regex-base
 - **API route**: `src/routes/api/triage/+server.ts` — SSE POST endpoint
 - **Transcription session**: `src/routes/api/transcribe/session/+server.ts` — Deepgram temporary token grant + stream config payload
 - **Audio recorder**: `src/lib/audio/recorder.svelte.ts` — browser `MediaRecorder` + Deepgram WebSocket realtime transcription
-- **OpenAI client**: `src/lib/server/llm/openai.ts` — singleton client for optional non-ASR OpenAI usage
 - **UI components**: `src/lib/components/triage/` — domain-specific components with Storybook stories
 
 ## Tech Stack & Patterns
