@@ -70,7 +70,11 @@ export function isOriginAllowed(requestOrigin: string | null, canonicalOrigin: s
   // Exact match against the canonical origin (derived from Host header)
   if (requestOrigin === canonicalOrigin) return true;
 
-  // Optional override for custom domains / preview deploys
+  // Optional override for custom domains / preview deploys.
+  // NOTE: This supports a single origin only (exact string match).
+  // Comma-separated or multiple origins are NOT parsed.
+  // TODO: If multiple allowed origins are needed (e.g. several preview
+  //       deploy URLs), split on "," and check set membership instead.
   const allowedOverride = env.ALLOWED_ORIGIN;
   if (allowedOverride && requestOrigin === allowedOverride) return true;
 
