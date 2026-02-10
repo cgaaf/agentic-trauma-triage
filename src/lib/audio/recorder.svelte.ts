@@ -96,6 +96,12 @@ export class AudioRecorder {
       return;
     }
 
+    // Guard: destroy() or stop() called while awaiting session fetch
+    if (this.#stopRequested || this.#finalizing) {
+      this.state = "idle";
+      return;
+    }
+
     try {
       this.#stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
@@ -111,6 +117,13 @@ export class AudioRecorder {
       } else {
         this.error = "Could not access microphone.";
       }
+      this.state = "idle";
+      return;
+    }
+
+    // Guard: destroy() or stop() called while awaiting getUserMedia
+    if (this.#stopRequested || this.#finalizing) {
+      this.#releaseMedia();
       this.state = "idle";
       return;
     }
@@ -193,6 +206,13 @@ export class AudioRecorder {
 
       connection.on(LiveTranscriptionEvents.Open, async () => {
         hasOpened = true;
+
+        // Guard: destroy() or stop() called while WebSocket was connecting
+        if (this.#stopRequested || this.#finalizing) {
+          resolveOnce();
+          return;
+        }
+
         try {
           this.#startMediaRecorder();
           this.#startKeepAliveTimer();
@@ -450,6 +470,11 @@ export class AudioRecorder {
 
     if (data.is_final) {
       if (transcript) {
+        // TODO(P2): Text-equality dedup — Deepgram can emit duplicate `is_final`
+        // events for the same utterance, so we skip consecutive identical segments.
+        // Known limitation: this could drop a legitimate repeated identical utterance
+        // (e.g. patient repeating the same word). A timing-based approach (comparing
+        // `data.start` timestamps) would be more robust but requires API validation.
         const lastFinal =
           this.#finalizedRealtimeSegments[this.#finalizedRealtimeSegments.length - 1];
         if (lastFinal !== transcript) {
