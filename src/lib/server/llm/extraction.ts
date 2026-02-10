@@ -19,8 +19,8 @@ export async function extractFields(report: string): Promise<{
       {
         role: "user",
         content:
-          `Extract structured fields from this raw speech-to-text EMS trauma transcription. ` +
-          `The text may contain transcription errors.\n\n${report}`,
+          `Extract structured fields from this EMS trauma report. ` +
+          `The text may be a speech-to-text transcription with recognition errors, or a typed narrative.\n\n${report}`,
       },
     ],
   });

@@ -5,7 +5,7 @@ import { env } from "$env/dynamic/private";
 import { createRateLimiter, type RateLimiter } from "$lib/server/rate-limiter.js";
 
 /**
- * Soft in-memory rate limiter for /api/triage.
+ * Soft in-memory rate limiter for protected API endpoints (/api/triage, /api/transcribe/session).
  *
  * ── Configuration (environment variables, required) ─────────────────
  *
@@ -64,7 +64,7 @@ function getLimiter(): RateLimiter {
  * indicates a non-browser client (curl, scripts). Rejecting mismatched or
  * missing Origins prevents cross-origin abuse of our proxied API endpoints.
  */
-function isOriginAllowed(requestOrigin: string | null, canonicalOrigin: string): boolean {
+export function isOriginAllowed(requestOrigin: string | null, canonicalOrigin: string): boolean {
   if (!requestOrigin) return false;
 
   // Exact match against the canonical origin (derived from Host header)
@@ -100,8 +100,8 @@ export const handle: Handle = async ({ event, resolve }) => {
     let ip: string;
     try {
       ip = event.getClientAddress();
-    } catch {
-      // If IP resolution fails (e.g. misconfigured proxy), fail open
+    } catch (err) {
+      console.warn("[hooks] getClientAddress() failed — rate limiting bypassed:", err);
       return resolve(event);
     }
 

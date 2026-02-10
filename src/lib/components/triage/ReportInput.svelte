@@ -40,7 +40,9 @@
 	};
 
 	recorder.onRecordingComplete = () => {
-		handleSubmit();
+		if (value.trim().split(/\s+/).length >= 3) {
+			handleSubmit();
+		}
 	};
 
 	const showExamples = $derived(!value.trim() && !loading && recorder.isIdle);
@@ -139,7 +141,7 @@
 					size="icon"
 					variant="outline"
 					class="rounded-full"
-					onclick={() => recorder.start()}
+					onclick={() => recorder.start().catch(() => {})}
 					disabled={loading}
 				>
 					<Mic class="size-4" />

@@ -22,6 +22,8 @@ export const MAX_DURATION_S = Number(env.PUBLIC_MAX_RECORDING_DURATION_S) || 30;
 const SILENCE_TIMEOUT_MS = 5_000;
 const KEEP_ALIVE_INTERVAL_MS = 3_000;
 const MEDIA_CHUNK_MS = 250;
+const MEDIA_STOP_TIMEOUT_MS = 1_000;
+const CHUNK_FLUSH_TIMEOUT_MS = 1_000;
 const SESSION_ENDPOINT = "/api/transcribe/session";
 
 const MOCK_NARRATIVE =
@@ -53,6 +55,8 @@ export class AudioRecorder {
   #mockInterval: ReturnType<typeof setInterval> | null = null;
   #stopRequested = false;
   #finalizing = false;
+  #stopSequencePromise: Promise<void> | null = null;
+  #pendingChunkSends = new Set<Promise<void>>();
 
   get isIdle() {
     return this.state === "idle";
@@ -82,6 +86,8 @@ export class AudioRecorder {
     this.#hasTranscription = false;
     this.#stopRequested = false;
     this.#finalizing = false;
+    this.#stopSequencePromise = null;
+    this.#pendingChunkSends.clear();
 
     this.state = "connecting";
 
@@ -154,17 +160,7 @@ export class AudioRecorder {
       this.#mockInterval = null;
     }
 
-    this.#stopMonitoring();
-    this.#stopMediaRecorder();
-
-    if (this.#connection) {
-      this.#finalizeConnection();
-      setTimeout(() => this.#requestCloseConnection(), 150);
-      setTimeout(() => this.#completeStop(), 900);
-      return;
-    }
-
-    this.#completeStop();
+    void this.#runStopSequence();
   }
 
   destroy() {
@@ -180,6 +176,7 @@ export class AudioRecorder {
     this.#stopMediaRecorder();
     this.#closeConnection();
     this.#releaseMedia();
+    this.#pendingChunkSends.clear();
     this.state = "idle";
   }
 
@@ -281,14 +278,22 @@ export class AudioRecorder {
 
     recorder.ondataavailable = async (event) => {
       if (!event.data || event.data.size === 0) return;
-      if (!this.#connection) return;
 
-      try {
-        const audioBuffer = await event.data.arrayBuffer();
-        this.#connection.send(audioBuffer);
-      } catch {
-        // Ignore transient errors while the stream is shutting down.
-      }
+      const sendPromise = (async () => {
+        if (!this.#connection) return;
+
+        try {
+          const audioBuffer = await event.data.arrayBuffer();
+          this.#connection?.send(audioBuffer);
+        } catch (err) {
+          if (this.#stopRequested || this.#finalizing) return;
+          console.warn("[AudioRecorder] Failed to send audio chunk:", err);
+          this.error = "Audio transmission interrupted. Your recording may be incomplete.";
+          this.#cleanup();
+        }
+      })();
+
+      this.#trackPendingChunkSend(sendPromise);
     };
 
     recorder.onerror = () => {
@@ -332,14 +337,109 @@ export class AudioRecorder {
     this.#mediaRecorder = null;
   }
 
+  #trackPendingChunkSend(sendPromise: Promise<void>) {
+    this.#pendingChunkSends.add(sendPromise);
+    void sendPromise.finally(() => {
+      this.#pendingChunkSends.delete(sendPromise);
+    });
+  }
+
+  async #stopMediaRecorderGracefully() {
+    const recorder = this.#mediaRecorder;
+    if (!recorder) return;
+
+    if (recorder.state === "inactive") {
+      this.#mediaRecorder = null;
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+      const cleanup = () => {
+        recorder.removeEventListener("stop", onStop);
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+        }
+      };
+
+      const settle = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve();
+      };
+
+      const onStop = () => {
+        settle();
+      };
+
+      recorder.addEventListener("stop", onStop, { once: true });
+      timeoutId = setTimeout(() => settle(), MEDIA_STOP_TIMEOUT_MS);
+
+      try {
+        recorder.stop();
+      } catch {
+        settle();
+      }
+    });
+
+    this.#mediaRecorder = null;
+  }
+
+  async #flushPendingChunkSends() {
+    if (this.#pendingChunkSends.size === 0) return;
+
+    const deadline = Date.now() + CHUNK_FLUSH_TIMEOUT_MS;
+    while (this.#pendingChunkSends.size > 0) {
+      const remainingMs = deadline - Date.now();
+      if (remainingMs <= 0) break;
+
+      const pending = Array.from(this.#pendingChunkSends);
+      await Promise.race([
+        Promise.allSettled(pending).then(() => undefined),
+        new Promise<void>((resolve) => setTimeout(resolve, remainingMs)),
+      ]);
+    }
+  }
+
+  async #runStopSequence() {
+    if (this.#stopSequencePromise) return this.#stopSequencePromise;
+
+    this.#stopSequencePromise = (async () => {
+      this.#stopMonitoring();
+      await this.#stopMediaRecorderGracefully();
+      await this.#flushPendingChunkSends();
+
+      if (this.#connection) {
+        this.#finalizeConnection();
+        setTimeout(() => this.#requestCloseConnection(), 150);
+        setTimeout(() => this.#completeStop(), 900);
+        return;
+      }
+
+      this.#completeStop();
+    })();
+
+    try {
+      await this.#stopSequencePromise;
+    } finally {
+      this.#stopSequencePromise = null;
+    }
+  }
+
   #startKeepAliveTimer() {
     if (this.#keepAliveTimer !== null) return;
 
     this.#keepAliveTimer = setInterval(() => {
       try {
         this.#connection?.keepAlive();
-      } catch {
-        // Ignore keep-alive errors while shutting down.
+      } catch (err) {
+        if (this.#stopRequested || this.#finalizing) return;
+        console.warn("[AudioRecorder] Keep-alive failed:", err);
+        this.error = "Connection to transcription service lost.";
+        this.#cleanup();
       }
     }, KEEP_ALIVE_INTERVAL_MS);
   }
@@ -433,8 +533,8 @@ export class AudioRecorder {
 
     try {
       this.#connection.finalize();
-    } catch {
-      // Ignore finalize failures during teardown.
+    } catch (err) {
+      console.warn("[AudioRecorder] Failed to finalize transcription:", err);
     }
   }
 
@@ -550,10 +650,15 @@ export class AudioRecorder {
     this.#finalizing = true;
     this.#stopMonitoring();
     this.#stopMediaRecorder();
+    this.#pendingChunkSends.clear();
     this.#closeConnection();
     this.#releaseMedia();
     this.state = "idle";
-    this.onRecordingComplete?.();
+    try {
+      this.onRecordingComplete?.();
+    } catch (err) {
+      console.error("[AudioRecorder] onRecordingComplete callback failed:", err);
+    }
   }
 
   #cleanup() {
@@ -561,6 +666,7 @@ export class AudioRecorder {
     this.#finalizing = true;
     this.#stopMonitoring();
     this.#stopMediaRecorder();
+    this.#pendingChunkSends.clear();
     this.#closeConnection();
     this.#releaseMedia();
     this.state = "idle";
