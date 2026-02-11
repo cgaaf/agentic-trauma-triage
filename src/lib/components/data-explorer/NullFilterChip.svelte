@@ -11,11 +11,13 @@
 		nullState = $bindable(),
 		searchValue = $bindable(undefined),
 		searchPlaceholder = "Search…",
+		onnullchange,
 	}: {
 		label: string;
 		nullState: NullFilterState;
 		searchValue?: string;
 		searchPlaceholder?: string;
+		onnullchange?: (v: NullFilterState) => void;
 	} = $props();
 
 	let hasSearch = $derived(searchValue !== undefined);
@@ -39,6 +41,7 @@
 			searchValue = "";
 		}
 		nullState = v;
+		onnullchange?.(v);
 	}
 </script>
 

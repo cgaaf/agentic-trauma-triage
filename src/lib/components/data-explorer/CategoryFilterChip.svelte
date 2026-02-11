@@ -11,11 +11,13 @@
 		options,
 		selected = $bindable(),
 		nullState = $bindable(),
+		onchange,
 	}: {
 		label: string;
 		options: { value: string; label: string }[];
 		selected: string;
 		nullState: NullFilterState;
+		onchange?: (selected: string, nullState: NullFilterState) => void;
 	} = $props();
 
 	let active = $derived(selected !== "" || nullState !== "all");
@@ -40,9 +42,11 @@
 		if (val === EMPTY_SENTINEL) {
 			selected = "";
 			nullState = "is_empty";
+			onchange?.("", "is_empty");
 		} else {
 			selected = val;
 			nullState = "all";
+			onchange?.(val, "all");
 		}
 	}
 </script>

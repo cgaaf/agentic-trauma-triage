@@ -13,6 +13,8 @@
 		step = 1,
 		nullState = $bindable(),
 		range = $bindable(),
+		onnullchange,
+		onrangechange,
 	}: {
 		label: string;
 		min: number;
@@ -20,6 +22,8 @@
 		step?: number;
 		nullState: NullFilterState;
 		range: [number, number];
+		onnullchange?: (v: NullFilterState) => void;
+		onrangechange?: (range: [number, number]) => void;
 	} = $props();
 
 	let active = $derived(nullState !== "all");
@@ -35,9 +39,12 @@
 
 	function onTriStateChange(v: NullFilterState) {
 		if (v === "has_value" && nullState !== "has_value") {
-			range = [min, max];
+			const resetRange: [number, number] = [min, max];
+			range = resetRange;
+			onrangechange?.(resetRange);
 		}
 		nullState = v;
+		onnullchange?.(v);
 	}
 </script>
 
@@ -62,7 +69,14 @@
 		{#if nullState === "has_value"}
 			<Separator class="my-3" />
 			<div class="space-y-2">
-				<Slider type="multiple" bind:value={range} {min} {max} {step} />
+				<Slider
+					type="multiple"
+					bind:value={range}
+					{min}
+					{max}
+					{step}
+					onValueCommit={(v) => onrangechange?.(v as [number, number])}
+				/>
 				<div class="text-muted-foreground flex justify-between text-xs">
 					<span>{range[0]}</span>
 					<span>{range[1]}</span>
