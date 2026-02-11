@@ -11,7 +11,7 @@
 		children: Snippet;
 	} = $props();
 
-	let open = $state(true);
+	let open = $state(false);
 </script>
 
 <Collapsible.Root bind:open>
