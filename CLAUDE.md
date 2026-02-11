@@ -14,7 +14,8 @@ pnpm lint:fix                        # Auto-fix lint issues
 pnpm fmt                             # Format with oxfmt
 pnpm fmt:check                       # Check formatting
 pnpm test                            # Run all vitest projects once
-pnpm vitest run --project server     # Quick server tests only (~92 tests)
+pnpm vitest run --project server     # Quick server tests only (~107 tests)
+pnpm validate                        # Run fmt, check, lint, test in parallel
 pnpm storybook                       # Storybook dev on port 6006
 ```
 
@@ -36,6 +37,8 @@ All phases stream as discriminated-union SSE events from `src/lib/server/pipelin
 - **Criteria**: `src/lib/server/criteria/criteria.ts` — 137 criteria (20 deterministic, 2 hybrid, 115 LLM-only), each with activation level and age range
 - **Pipeline**: `src/lib/server/pipeline.ts` — SSE async generator orchestrating all phases
 - **Deterministic engine**: `src/lib/server/engine/deterministic.ts` — VitalRule-based threshold evaluation
+- **Age filter**: `src/lib/server/engine/age-filter.ts` — pediatric/adult age range filtering
+- **Plausibility**: `src/lib/server/engine/plausibility.ts` — extraction plausibility validation
 - **LLM calls**: `src/lib/server/llm/` — extraction.ts (Haiku), evaluation.ts (Sonnet), prompts.ts (system prompts + tool schemas)
 - **Merge logic**: `src/lib/server/engine/merge.ts` — combines results, determines activation level
 - **Client state**: `src/lib/state/triage.svelte.ts` — Svelte 5 `$state` class pattern (not stores)
@@ -71,3 +74,12 @@ Three vitest projects configured in `vite.config.ts`:
 ## Known Issues
 
 Pre-existing TypeScript errors in shadcn-svelte generated code (chart-container, form-fieldset, sidebar-rail). These are upstream issues — ignore them during `pnpm check`.
+
+## Supabase (WIP — `feature/supabase-persistence`)
+
+Database persistence layer using Supabase (Postgres).
+
+- **Config**: `supabase/config.toml` — local dev config (project id: `agentic-trauma-triage`)
+- **Migrations**: `supabase/migrations/` — schema migrations managed via Supabase CLI
+- **Seed data**: `supabase/seed.sql` — development seed data
+- **Deployment**: Cloudflare Workers with `nodejs_compat` compatibility flags (`wrangler.jsonc`)
