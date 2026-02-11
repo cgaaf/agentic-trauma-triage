@@ -14,13 +14,13 @@
 </script>
 
 <div class="overflow-x-auto rounded-md border">
-	<Table.Root>
+	<Table.Root class="[&_td]:px-3 [&_th]:px-3">
 		<Table.Header>
 			<Table.Row>
-				<Table.Head class="w-12 text-right">ID</Table.Head>
-				<Table.Head class="min-w-[200px]">Criterion</Table.Head>
-				<Table.Head class="min-w-[150px]">Mechanism</Table.Head>
-				<Table.Head class="min-w-[150px]">Descriptors</Table.Head>
+				<Table.Head class="w-10 border-r text-right">ID</Table.Head>
+				<Table.Head class="min-w-[200px] max-w-[300px]">Criterion</Table.Head>
+				<Table.Head class="min-w-[150px] max-w-[200px]">Mechanism</Table.Head>
+				<Table.Head class="min-w-[150px] max-w-[200px]">Descriptors</Table.Head>
 				<Table.Head class="w-12">Age</Table.Head>
 				<Table.Head class="w-16">Gender</Table.Head>
 				<Table.Head class="w-12">GCS</Table.Head>
@@ -36,22 +36,28 @@
 		<Table.Body>
 			{#each examples as row (row.id)}
 				<Table.Row>
-					<Table.Cell class="text-right font-mono text-xs">{row.id}</Table.Cell>
-					<Table.Cell class="text-xs">
-						{#if row.criteria}
-							<button
-								type="button"
-								class="text-primary hover:underline text-left"
-								onclick={() => oncriterionclick(row)}
-							>
-								{row.criteria.description}
-							</button>
-						{:else}
-							<span class="text-muted-foreground italic">Unlinked</span>
-						{/if}
+					<Table.Cell class="border-r text-right font-mono text-xs">{row.id}</Table.Cell>
+					<Table.Cell class="max-w-[300px] text-xs">
+						<div class="line-clamp-2 whitespace-normal">
+							{#if row.criteria}
+								<button
+									type="button"
+									class="text-primary hover:underline text-left"
+									onclick={() => oncriterionclick(row)}
+								>
+									{row.criteria.description}
+								</button>
+							{:else}
+								<span class="text-muted-foreground italic">Unlinked</span>
+							{/if}
+						</div>
 					</Table.Cell>
-					<Table.Cell class="text-xs">{row.mechanism}</Table.Cell>
-					<Table.Cell class="text-xs">{row.descriptors ?? dash}</Table.Cell>
+					<Table.Cell class="max-w-[200px] text-xs">
+						<div class="line-clamp-2 whitespace-normal">{row.mechanism}</div>
+					</Table.Cell>
+					<Table.Cell class="max-w-[200px] text-xs">
+						<div class="line-clamp-2 whitespace-normal">{row.descriptors ?? dash}</div>
+					</Table.Cell>
 					<Table.Cell class="font-mono text-xs">{row.age}</Table.Cell>
 					<Table.Cell class="text-xs">{row.gender ?? dash}</Table.Cell>
 					<Table.Cell class="font-mono text-xs">{row.gcs ?? dash}</Table.Cell>
