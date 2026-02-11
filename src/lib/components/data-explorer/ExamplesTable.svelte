@@ -1,0 +1,71 @@
+<script lang="ts">
+	import * as Table from "$lib/components/ui/table/index.js";
+	import type { ExampleWithCriterion } from "$lib/types/database.js";
+
+	let {
+		examples,
+		oncriterionclick,
+	}: {
+		examples: ExampleWithCriterion[];
+		oncriterionclick: (example: ExampleWithCriterion) => void;
+	} = $props();
+
+	const dash = "\u2014";
+</script>
+
+<div class="overflow-x-auto rounded-md border">
+	<Table.Root>
+		<Table.Header>
+			<Table.Row>
+				<Table.Head class="w-12 text-right">ID</Table.Head>
+				<Table.Head class="min-w-[200px]">Criterion</Table.Head>
+				<Table.Head class="min-w-[150px]">Mechanism</Table.Head>
+				<Table.Head class="min-w-[150px]">Descriptors</Table.Head>
+				<Table.Head class="w-12">Age</Table.Head>
+				<Table.Head class="w-16">Gender</Table.Head>
+				<Table.Head class="w-12">GCS</Table.Head>
+				<Table.Head class="w-12">SBP</Table.Head>
+				<Table.Head class="w-12">HR</Table.Head>
+				<Table.Head class="w-12">RR</Table.Head>
+				<Table.Head class="w-16">Airway</Table.Head>
+				<Table.Head class="w-20">Breathing</Table.Head>
+				<Table.Head class="w-12">SpO2</Table.Head>
+				<Table.Head class="w-16">Pregnancy</Table.Head>
+			</Table.Row>
+		</Table.Header>
+		<Table.Body>
+			{#each examples as row (row.id)}
+				<Table.Row>
+					<Table.Cell class="text-right font-mono text-xs">{row.id}</Table.Cell>
+					<Table.Cell class="text-xs">
+						{#if row.criteria}
+							<button
+								type="button"
+								class="text-primary hover:underline text-left"
+								onclick={() => oncriterionclick(row)}
+							>
+								{row.criteria.description}
+							</button>
+						{:else}
+							<span class="text-muted-foreground italic">Unlinked</span>
+						{/if}
+					</Table.Cell>
+					<Table.Cell class="text-xs">{row.mechanism}</Table.Cell>
+					<Table.Cell class="text-xs">{row.descriptors ?? dash}</Table.Cell>
+					<Table.Cell class="font-mono text-xs">{row.age}</Table.Cell>
+					<Table.Cell class="text-xs">{row.gender ?? dash}</Table.Cell>
+					<Table.Cell class="font-mono text-xs">{row.gcs ?? dash}</Table.Cell>
+					<Table.Cell class="font-mono text-xs">{row.systolic_bp ?? dash}</Table.Cell>
+					<Table.Cell class="font-mono text-xs">{row.heart_rate ?? dash}</Table.Cell>
+					<Table.Cell class="font-mono text-xs">{row.respiratory_rate ?? dash}</Table.Cell>
+					<Table.Cell class="text-xs">{row.airway ?? dash}</Table.Cell>
+					<Table.Cell class="text-xs">{row.breathing ?? dash}</Table.Cell>
+					<Table.Cell class="font-mono text-xs">{row.oxygen_saturation ?? dash}</Table.Cell>
+					<Table.Cell class="font-mono text-xs">
+						{row.pregnancy_in_weeks !== null ? `${row.pregnancy_in_weeks}w` : dash}
+					</Table.Cell>
+				</Table.Row>
+			{/each}
+		</Table.Body>
+	</Table.Root>
+</div>
