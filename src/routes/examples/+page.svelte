@@ -278,7 +278,7 @@
 		onclear={clearFilters}
 	/>
 
-	<ExamplesTable examples={filteredExamples} oncriterionclick={openSheet} />
+	<ExamplesTable examples={filteredExamples} onrowclick={openSheet} />
 
 	<ExampleCriterionSheet example={selectedExample} bind:open={sheetOpen} />
 </div>

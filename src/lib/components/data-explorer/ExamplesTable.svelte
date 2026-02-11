@@ -4,10 +4,10 @@
 
 	let {
 		examples,
-		oncriterionclick,
+		onrowclick,
 	}: {
 		examples: ExampleWithCriterion[];
-		oncriterionclick: (example: ExampleWithCriterion) => void;
+		onrowclick: (example: ExampleWithCriterion) => void;
 	} = $props();
 
 	const dash = "\u2014";
@@ -35,18 +35,15 @@
 		</Table.Header>
 		<Table.Body>
 			{#each examples as row (row.id)}
-				<Table.Row>
+				<Table.Row
+					class="cursor-pointer"
+					onclick={() => onrowclick(row)}
+				>
 					<Table.Cell class="border-r text-right font-mono text-xs">{row.id}</Table.Cell>
 					<Table.Cell class="max-w-[300px] text-xs">
 						<div class="line-clamp-2 whitespace-normal">
 							{#if row.criteria}
-								<button
-									type="button"
-									class="text-primary hover:underline text-left"
-									onclick={() => oncriterionclick(row)}
-								>
-									{row.criteria.description}
-								</button>
+								{row.criteria.description}
 							{:else}
 								<span class="text-muted-foreground italic">Unlinked</span>
 							{/if}
