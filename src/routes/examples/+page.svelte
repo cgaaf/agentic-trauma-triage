@@ -1,10 +1,13 @@
 <script lang="ts">
 	import type { ExampleWithCriterion, NullFilterState } from "$lib/types/database.js";
-	import FilterPanel from "$lib/components/data-explorer/FilterPanel.svelte";
+	import { Button } from "$lib/components/ui/button/index.js";
+	import TextSearchChip from "$lib/components/data-explorer/TextSearchChip.svelte";
 	import ResultsCount from "$lib/components/data-explorer/ResultsCount.svelte";
-	import ExamplesFilters from "$lib/components/data-explorer/ExamplesFilters.svelte";
 	import ExamplesTable from "$lib/components/data-explorer/ExamplesTable.svelte";
 	import ExampleCriterionSheet from "$lib/components/data-explorer/ExampleCriterionSheet.svelte";
+	import VitalFilterChip from "$lib/components/data-explorer/VitalFilterChip.svelte";
+	import CategoryFilterChip from "$lib/components/data-explorer/CategoryFilterChip.svelte";
+	import NullFilterChip from "$lib/components/data-explorer/NullFilterChip.svelte";
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
 
@@ -40,35 +43,62 @@
 			const param = page.url.searchParams.get(`null_${col}`);
 			filters[col] = param === "has_value" || param === "is_empty" ? param : "all";
 		}
+		// Backward compat: if URL has vital range param but no null_* param, auto-set to "has_value"
+		if (page.url.searchParams.has("gcs") && filters.gcs === "all") filters.gcs = "has_value";
+		if (page.url.searchParams.has("sbp") && filters.systolic_bp === "all")
+			filters.systolic_bp = "has_value";
+		if (page.url.searchParams.has("hr") && filters.heart_rate === "all")
+			filters.heart_rate = "has_value";
+		if (page.url.searchParams.has("rr") && filters.respiratory_rate === "all")
+			filters.respiratory_rate = "has_value";
+		if (page.url.searchParams.has("spo2") && filters.oxygen_saturation === "all")
+			filters.oxygen_saturation = "has_value";
 		return filters;
 	}
 
 	// ─── Filter state (initialized from URL params) ─────────────────
-	const initGcs = parseRange(page.url.searchParams.get("gcs"));
-	let gcsActive: boolean = $state(initGcs !== null);
-	let gcsRange: [number, number] = $state(initGcs ?? [3, 15]);
-
-	const initSbp = parseRange(page.url.searchParams.get("sbp"));
-	let sbpActive: boolean = $state(initSbp !== null);
-	let sbpRange: [number, number] = $state(initSbp ?? [60, 200]);
-
-	const initHr = parseRange(page.url.searchParams.get("hr"));
-	let hrActive: boolean = $state(initHr !== null);
-	let hrRange: [number, number] = $state(initHr ?? [40, 180]);
-
-	const initRr = parseRange(page.url.searchParams.get("rr"));
-	let rrActive: boolean = $state(initRr !== null);
-	let rrRange: [number, number] = $state(initRr ?? [10, 30]);
-
-	const initSpo2 = parseRange(page.url.searchParams.get("spo2"));
-	let spo2Active: boolean = $state(initSpo2 !== null);
-	let spo2Range: [number, number] = $state(initSpo2 ?? [90, 100]);
+	let gcsRange: [number, number] = $state(parseRange(page.url.searchParams.get("gcs")) ?? [3, 15]);
+	let sbpRange: [number, number] = $state(
+		parseRange(page.url.searchParams.get("sbp")) ?? [60, 200],
+	);
+	let hrRange: [number, number] = $state(
+		parseRange(page.url.searchParams.get("hr")) ?? [40, 180],
+	);
+	let rrRange: [number, number] = $state(
+		parseRange(page.url.searchParams.get("rr")) ?? [10, 30],
+	);
+	let spo2Range: [number, number] = $state(
+		parseRange(page.url.searchParams.get("spo2")) ?? [90, 100],
+	);
 
 	let airway: string = $state(page.url.searchParams.get("airway") ?? "");
 	let breathing: string = $state(page.url.searchParams.get("breathing") ?? "");
 	let search: string = $state(page.url.searchParams.get("search") ?? "");
+	let criterionSearch: string = $state(page.url.searchParams.get("criterion_search") ?? "");
+	let descriptorsSearch: string = $state(page.url.searchParams.get("descriptors_search") ?? "");
 
 	let nullFilters: Record<string, NullFilterState> = $state(initNullFilters());
+
+	// Vital active states derived from nullFilters
+	let gcsActive = $derived(nullFilters.gcs === "has_value");
+	let sbpActive = $derived(nullFilters.systolic_bp === "has_value");
+	let hrActive = $derived(nullFilters.heart_rate === "has_value");
+	let rrActive = $derived(nullFilters.respiratory_rate === "has_value");
+	let spo2Active = $derived(nullFilters.oxygen_saturation === "has_value");
+
+	// Category options
+	const airwayOptions = [
+		{ value: "patent", label: "patent" },
+		{ value: "intubated", label: "intubated" },
+		{ value: "extraglottic", label: "extraglottic" },
+		{ value: "compromised", label: "compromised" },
+	];
+
+	const breathingOptions = [
+		{ value: "Breathing Independently", label: "Breathing Independently" },
+		{ value: "Bagging", label: "Bagging" },
+		{ value: "Ventilator", label: "Ventilator" },
+	];
 
 	// ─── Derived filtering ──────────────────────────────────────────
 	let filteredExamples = $derived.by(() => {
@@ -121,19 +151,29 @@
 			result = result.filter((e) => e.breathing === breathing);
 		}
 
-		// Text search (mechanism + descriptors)
+		// Text search (mechanism)
 		if (search.trim()) {
 			const q = search.toLowerCase();
-			result = result.filter(
-				(e) =>
-					e.mechanism.toLowerCase().includes(q) ||
-					(e.descriptors && e.descriptors.toLowerCase().includes(q)),
-			);
+			result = result.filter((e) => e.mechanism.toLowerCase().includes(q));
 		}
 
-		// Null filters
+		// Text search (criterion description)
+		if (criterionSearch.trim()) {
+			const q = criterionSearch.toLowerCase();
+			result = result.filter((e) => e.criteria?.description?.toLowerCase().includes(q));
+		}
+
+		// Text search (descriptors)
+		if (descriptorsSearch.trim()) {
+			const q = descriptorsSearch.toLowerCase();
+			result = result.filter((e) => e.descriptors?.toLowerCase().includes(q));
+		}
+
+		// Null filters (skip vitals — already handled by range filters above)
+		const vitalCols = new Set(["gcs", "systolic_bp", "heart_rate", "respiratory_rate", "oxygen_saturation"]);
 		for (const [col, state] of Object.entries(nullFilters)) {
 			if (state === "all") continue;
+			if (vitalCols.has(col) && state === "has_value") continue; // handled by range filter
 			const key = col as keyof ExampleWithCriterion;
 			if (state === "has_value") {
 				result = result.filter((e) => {
@@ -153,14 +193,11 @@
 
 	// ─── Active filter count ────────────────────────────────────────
 	let activeFilterCount = $derived(
-		(gcsActive ? 1 : 0) +
-			(sbpActive ? 1 : 0) +
-			(hrActive ? 1 : 0) +
-			(rrActive ? 1 : 0) +
-			(spo2Active ? 1 : 0) +
-			(airway ? 1 : 0) +
+		(airway ? 1 : 0) +
 			(breathing ? 1 : 0) +
 			(search.trim() ? 1 : 0) +
+			(criterionSearch.trim() ? 1 : 0) +
+			(descriptorsSearch.trim() ? 1 : 0) +
 			Object.values(nullFilters).filter((s) => s !== "all").length,
 	);
 
@@ -169,19 +206,16 @@
 
 	$effect(() => {
 		// Read all filter values to track them
-		const _gcsActive = gcsActive;
 		const _gcsRange = gcsRange;
-		const _sbpActive = sbpActive;
 		const _sbpRange = sbpRange;
-		const _hrActive = hrActive;
 		const _hrRange = hrRange;
-		const _rrActive = rrActive;
 		const _rrRange = rrRange;
-		const _spo2Active = spo2Active;
 		const _spo2Range = spo2Range;
 		const _airway = airway;
 		const _breathing = breathing;
 		const _search = search;
+		const _criterionSearch = criterionSearch;
+		const _descriptorsSearch = descriptorsSearch;
 		const _nullFilters = nullFilters;
 
 		clearTimeout(syncTimeout);
@@ -189,14 +223,17 @@
 		syncTimeout = setTimeout(() => {
 			const params = new URLSearchParams();
 
-			if (_gcsActive) params.set("gcs", _gcsRange.join(","));
-			if (_sbpActive) params.set("sbp", _sbpRange.join(","));
-			if (_hrActive) params.set("hr", _hrRange.join(","));
-			if (_rrActive) params.set("rr", _rrRange.join(","));
-			if (_spo2Active) params.set("spo2", _spo2Range.join(","));
+			if (_nullFilters.gcs === "has_value") params.set("gcs", _gcsRange.join(","));
+			if (_nullFilters.systolic_bp === "has_value") params.set("sbp", _sbpRange.join(","));
+			if (_nullFilters.heart_rate === "has_value") params.set("hr", _hrRange.join(","));
+			if (_nullFilters.respiratory_rate === "has_value") params.set("rr", _rrRange.join(","));
+			if (_nullFilters.oxygen_saturation === "has_value")
+				params.set("spo2", _spo2Range.join(","));
 			if (_airway) params.set("airway", _airway);
 			if (_breathing) params.set("breathing", _breathing);
 			if (_search.trim()) params.set("search", _search.trim());
+			if (_criterionSearch.trim()) params.set("criterion_search", _criterionSearch.trim());
+			if (_descriptorsSearch.trim()) params.set("descriptors_search", _descriptorsSearch.trim());
 
 			for (const [col, state] of Object.entries(_nullFilters)) {
 				if (state !== "all") {
@@ -224,19 +261,16 @@
 
 	// ─── Clear all filters ──────────────────────────────────────────
 	function clearFilters() {
-		gcsActive = false;
 		gcsRange = [3, 15];
-		sbpActive = false;
 		sbpRange = [60, 200];
-		hrActive = false;
 		hrRange = [40, 180];
-		rrActive = false;
 		rrRange = [10, 30];
-		spo2Active = false;
 		spo2Range = [90, 100];
 		airway = "";
 		breathing = "";
 		search = "";
+		criterionSearch = "";
+		descriptorsSearch = "";
 		const reset: Record<string, NullFilterState> = {};
 		for (const col of nullFilterColumns) {
 			reset[col] = "all";
@@ -252,24 +286,77 @@
 <div class="container mx-auto max-w-[1400px] space-y-4 p-4">
 	<h1 class="text-2xl font-bold tracking-tight">Examples Explorer</h1>
 
-	<FilterPanel {activeFilterCount}>
-		<ExamplesFilters
-			bind:gcsActive
-			bind:gcsRange
-			bind:sbpActive
-			bind:sbpRange
-			bind:hrActive
-			bind:hrRange
-			bind:rrActive
-			bind:rrRange
-			bind:spo2Active
-			bind:spo2Range
-			bind:airway
-			bind:breathing
-			bind:search
-			bind:nullFilters
+	<!-- Chip bar -->
+	<div class="flex flex-wrap items-center gap-2">
+		<NullFilterChip
+			label="Criterion"
+			bind:nullState={nullFilters.criteria_id}
+			bind:searchValue={criterionSearch}
+			searchPlaceholder="Search criteria…"
 		/>
-	</FilterPanel>
+		<TextSearchChip label="Mechanism" placeholder="Search mechanism…" bind:value={search} />
+		<NullFilterChip
+			label="Descriptors"
+			bind:nullState={nullFilters.descriptors}
+			bind:searchValue={descriptorsSearch}
+			searchPlaceholder="Search descriptors…"
+		/>
+		<NullFilterChip label="Gender" bind:nullState={nullFilters.gender} />
+		<VitalFilterChip
+			label="GCS"
+			min={3}
+			max={15}
+			bind:nullState={nullFilters.gcs}
+			bind:range={gcsRange}
+		/>
+		<VitalFilterChip
+			label="SBP"
+			min={0}
+			max={300}
+			bind:nullState={nullFilters.systolic_bp}
+			bind:range={sbpRange}
+		/>
+		<VitalFilterChip
+			label="HR"
+			min={0}
+			max={250}
+			bind:nullState={nullFilters.heart_rate}
+			bind:range={hrRange}
+		/>
+		<VitalFilterChip
+			label="RR"
+			min={0}
+			max={60}
+			bind:nullState={nullFilters.respiratory_rate}
+			bind:range={rrRange}
+		/>
+		<CategoryFilterChip
+			label="Airway"
+			options={airwayOptions}
+			bind:selected={airway}
+			bind:nullState={nullFilters.airway}
+		/>
+		<CategoryFilterChip
+			label="Breathing"
+			options={breathingOptions}
+			bind:selected={breathing}
+			bind:nullState={nullFilters.breathing}
+		/>
+		<VitalFilterChip
+			label="SpO2"
+			min={0}
+			max={100}
+			bind:nullState={nullFilters.oxygen_saturation}
+			bind:range={spo2Range}
+		/>
+		<NullFilterChip label="Pregnancy" bind:nullState={nullFilters.pregnancy_in_weeks} />
+
+		{#if activeFilterCount > 0}
+			<Button variant="ghost" size="sm" class="h-7 text-xs" onclick={clearFilters}>
+				Clear all
+			</Button>
+		{/if}
+	</div>
 
 	<ResultsCount
 		filtered={filteredExamples.length}
