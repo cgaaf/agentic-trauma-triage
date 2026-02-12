@@ -117,12 +117,7 @@
 		<CriteriaFilters bind:levels bind:categories bind:age bind:search />
 	</FilterPanel>
 
-	<ResultsCount
-		filtered={filteredCriteria.length}
-		total={data.criteria.length}
-		hasActiveFilters={activeFilterCount > 0}
-		onclear={clearFilters}
-	/>
+	<ResultsCount filtered={filteredCriteria.length} total={data.criteria.length} />
 
 	<CriteriaTable criteria={filteredCriteria} onrowclick={openSheet} />
 

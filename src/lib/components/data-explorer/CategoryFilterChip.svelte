@@ -2,6 +2,7 @@
 	import * as Popover from "$lib/components/ui/popover/index.js";
 	import * as Select from "$lib/components/ui/select/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
+	import X from "@lucide/svelte/icons/x";
 	import type { NullFilterState } from "$lib/types/database.js";
 
 	const EMPTY_SENTINEL = "__empty__";
@@ -12,12 +13,14 @@
 		selected = $bindable(),
 		nullState = $bindable(),
 		onchange,
+		onclear,
 	}: {
 		label: string;
 		options: { value: string; label: string }[];
 		selected: string;
 		nullState: NullFilterState;
 		onchange?: (selected: string, nullState: NullFilterState) => void;
+		onclear?: () => void;
 	} = $props();
 
 	let active = $derived(selected !== "" || nullState !== "all");
@@ -64,10 +67,20 @@
 					<span class="bg-primary size-1.5 rounded-full"></span>
 				{/if}
 				{chipLabel}
+				{#if active && onclear}
+					<button
+						type="button"
+						class="hover:bg-muted -mr-1 ml-0.5 rounded-sm p-0.5"
+						onclick={(e) => { e.stopPropagation(); onclear(); }}
+						aria-label="Clear {label} filter"
+					>
+						<X class="size-3" />
+					</button>
+				{/if}
 			</Button>
 		{/snippet}
 	</Popover.Trigger>
-	<Popover.Content class="w-48" align="start">
+	<Popover.Content class="w-56" align="start">
 		<Select.Root type="single" value={selectValue} {onValueChange}>
 			<Select.Trigger class="w-full">
 				{#if nullState === "is_empty"}

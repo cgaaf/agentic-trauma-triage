@@ -3,6 +3,7 @@
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Separator } from "$lib/components/ui/separator/index.js";
 	import { Slider } from "$lib/components/ui/slider/index.js";
+	import X from "@lucide/svelte/icons/x";
 	import TriStateToggle from "./TriStateToggle.svelte";
 	import type { NullFilterState } from "$lib/types/database.js";
 
@@ -15,6 +16,7 @@
 		range = $bindable(),
 		onnullchange,
 		onrangechange,
+		onclear,
 	}: {
 		label: string;
 		min: number;
@@ -24,6 +26,7 @@
 		range: [number, number];
 		onnullchange?: (v: NullFilterState) => void;
 		onrangechange?: (range: [number, number]) => void;
+		onclear?: () => void;
 	} = $props();
 
 	let active = $derived(nullState !== "all");
@@ -61,6 +64,16 @@
 					<span class="bg-primary size-1.5 rounded-full"></span>
 				{/if}
 				{chipLabel}
+				{#if active && onclear}
+					<button
+						type="button"
+						class="hover:bg-muted -mr-1 ml-0.5 rounded-sm p-0.5"
+						onclick={(e) => { e.stopPropagation(); onclear(); }}
+						aria-label="Clear {label} filter"
+					>
+						<X class="size-3" />
+					</button>
+				{/if}
 			</Button>
 		{/snippet}
 	</Popover.Trigger>

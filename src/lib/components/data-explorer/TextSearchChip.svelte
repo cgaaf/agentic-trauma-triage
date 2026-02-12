@@ -2,15 +2,18 @@
 	import * as Popover from "$lib/components/ui/popover/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
+	import X from "@lucide/svelte/icons/x";
 
 	let {
 		label,
 		placeholder = `Search ${label.toLowerCase()}…`,
 		value = $bindable(),
+		onclear,
 	}: {
 		label: string;
 		placeholder?: string;
 		value: string;
+		onclear?: () => void;
 	} = $props();
 
 	let active = $derived(value.trim() !== "");
@@ -36,10 +39,20 @@
 					<span class="bg-primary size-1.5 rounded-full"></span>
 				{/if}
 				{chipLabel}
+				{#if active && onclear}
+					<button
+						type="button"
+						class="hover:bg-muted -mr-1 ml-0.5 rounded-sm p-0.5"
+						onclick={(e) => { e.stopPropagation(); onclear(); }}
+						aria-label="Clear {label} filter"
+					>
+						<X class="size-3" />
+					</button>
+				{/if}
 			</Button>
 		{/snippet}
 	</Popover.Trigger>
-	<Popover.Content class="w-56" align="start">
+	<Popover.Content class="w-72" align="start">
 		<Input type="text" {placeholder} class="h-8 text-xs" bind:value />
 	</Popover.Content>
 </Popover.Root>

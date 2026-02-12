@@ -18,6 +18,7 @@
 		buildUpdatedParams,
 		countActiveFilters,
 		defaultFilterState,
+		VITAL_DEFAULTS,
 		type NullFilterColumn,
 		type VitalParamKey,
 	} from "./examples-filters.js";
@@ -119,6 +120,44 @@
 		sheetOpen = true;
 	}
 
+	// ─── Per-chip clear handlers ────────────────────────────────
+	function clearNullFilter(col: NullFilterColumn) {
+		if (col === "criteria_id") criterionSearchLocal = "";
+		if (col === "descriptors") descriptorsSearchLocal = "";
+		clearTimeout(debounceTimeout);
+		navigate(
+			buildUpdatedParams(page.url.searchParams, {
+				nullFilters: { ...filters.nullFilters, [col]: "all" },
+				...(col === "criteria_id" ? { criterionSearch: "" } : {}),
+				...(col === "descriptors" ? { descriptorsSearch: "" } : {}),
+			}),
+		);
+	}
+
+	function clearVital(key: VitalParamKey, col: NullFilterColumn) {
+		navigate(
+			buildUpdatedParams(page.url.searchParams, {
+				nullFilters: { ...filters.nullFilters, [col]: "all" },
+				vitalRanges: { ...filters.vitalRanges, [key]: [...VITAL_DEFAULTS[key]] },
+			}),
+		);
+	}
+
+	function clearCategory(field: "airway" | "breathing") {
+		navigate(
+			buildUpdatedParams(page.url.searchParams, {
+				[field]: "",
+				nullFilters: { ...filters.nullFilters, [field]: "all" },
+			}),
+		);
+	}
+
+	function clearTextSearch() {
+		searchLocal = "";
+		clearTimeout(debounceTimeout);
+		navigate(buildUpdatedParams(page.url.searchParams, { search: "" }));
+	}
+
 	// ─── Clear all filters ──────────────────────────────────────
 	function clearFilters() {
 		searchLocal = "";
@@ -142,14 +181,21 @@
 			label="Criterion"
 			nullState={filters.nullFilters.criteria_id}
 			onnullchange={(v) => setNullFilter("criteria_id", v)}
+			onclear={() => clearNullFilter("criteria_id")}
 			bind:searchValue={criterionSearchLocal}
 			searchPlaceholder="Search criteria…"
 		/>
-		<TextSearchChip label="Mechanism" placeholder="Search mechanism…" bind:value={searchLocal} />
+		<TextSearchChip
+			label="Mechanism"
+			placeholder="Search mechanism…"
+			bind:value={searchLocal}
+			onclear={clearTextSearch}
+		/>
 		<NullFilterChip
 			label="Descriptors"
 			nullState={filters.nullFilters.descriptors}
 			onnullchange={(v) => setNullFilter("descriptors", v)}
+			onclear={() => clearNullFilter("descriptors")}
 			bind:searchValue={descriptorsSearchLocal}
 			searchPlaceholder="Search descriptors…"
 		/>
@@ -157,6 +203,7 @@
 			label="Gender"
 			nullState={filters.nullFilters.gender}
 			onnullchange={(v) => setNullFilter("gender", v)}
+			onclear={() => clearNullFilter("gender")}
 		/>
 		<VitalFilterChip
 			label="GCS"
@@ -166,6 +213,7 @@
 			range={filters.vitalRanges.gcs}
 			onnullchange={(v) => setNullFilter("gcs", v)}
 			onrangechange={(r) => setVitalRange("gcs", r)}
+			onclear={() => clearVital("gcs", "gcs")}
 		/>
 		<VitalFilterChip
 			label="SBP"
@@ -175,6 +223,7 @@
 			range={filters.vitalRanges.sbp}
 			onnullchange={(v) => setNullFilter("systolic_bp", v)}
 			onrangechange={(r) => setVitalRange("sbp", r)}
+			onclear={() => clearVital("sbp", "systolic_bp")}
 		/>
 		<VitalFilterChip
 			label="HR"
@@ -184,6 +233,7 @@
 			range={filters.vitalRanges.hr}
 			onnullchange={(v) => setNullFilter("heart_rate", v)}
 			onrangechange={(r) => setVitalRange("hr", r)}
+			onclear={() => clearVital("hr", "heart_rate")}
 		/>
 		<VitalFilterChip
 			label="RR"
@@ -193,6 +243,7 @@
 			range={filters.vitalRanges.rr}
 			onnullchange={(v) => setNullFilter("respiratory_rate", v)}
 			onrangechange={(r) => setVitalRange("rr", r)}
+			onclear={() => clearVital("rr", "respiratory_rate")}
 		/>
 		<CategoryFilterChip
 			label="Airway"
@@ -200,6 +251,7 @@
 			selected={filters.airway}
 			nullState={filters.nullFilters.airway}
 			onchange={(sel, ns) => setCategoryFilter("airway", sel, ns)}
+			onclear={() => clearCategory("airway")}
 		/>
 		<CategoryFilterChip
 			label="Breathing"
@@ -207,6 +259,7 @@
 			selected={filters.breathing}
 			nullState={filters.nullFilters.breathing}
 			onchange={(sel, ns) => setCategoryFilter("breathing", sel, ns)}
+			onclear={() => clearCategory("breathing")}
 		/>
 		<VitalFilterChip
 			label="SpO2"
@@ -216,11 +269,13 @@
 			range={filters.vitalRanges.spo2}
 			onnullchange={(v) => setNullFilter("oxygen_saturation", v)}
 			onrangechange={(r) => setVitalRange("spo2", r)}
+			onclear={() => clearVital("spo2", "oxygen_saturation")}
 		/>
 		<NullFilterChip
 			label="Pregnancy"
 			nullState={filters.nullFilters.pregnancy_in_weeks}
 			onnullchange={(v) => setNullFilter("pregnancy_in_weeks", v)}
+			onclear={() => clearNullFilter("pregnancy_in_weeks")}
 		/>
 
 		{#if activeFilterCount > 0}
@@ -230,12 +285,7 @@
 		{/if}
 	</div>
 
-	<ResultsCount
-		filtered={filteredExamples.length}
-		total={data.examples.length}
-		hasActiveFilters={activeFilterCount > 0}
-		onclear={clearFilters}
-	/>
+	<ResultsCount filtered={filteredExamples.length} total={data.examples.length} />
 
 	<ExamplesTable examples={filteredExamples} onrowclick={openSheet} />
 
