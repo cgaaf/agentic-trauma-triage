@@ -2,6 +2,7 @@
 	import type { ExampleWithCriterion } from "$lib/types/database.js";
 	import type { NullFilterState } from "$lib/types/database.js";
 	import { Button } from "$lib/components/ui/button/index.js";
+	import ArrowRight from "@lucide/svelte/icons/arrow-right";
 	import TextSearchChip from "$lib/components/data-explorer/TextSearchChip.svelte";
 	import ResultsCount from "$lib/components/data-explorer/ResultsCount.svelte";
 	import ExamplesTable from "$lib/components/data-explorer/ExamplesTable.svelte";
@@ -173,7 +174,13 @@
 </svelte:head>
 
 <div class="container mx-auto max-w-[1400px] space-y-4 p-4">
-	<h1 class="text-2xl font-bold tracking-tight">Examples Explorer</h1>
+	<div class="flex items-center justify-between">
+		<h1 class="text-2xl font-bold tracking-tight">Examples Explorer</h1>
+		<Button variant="outline" size="sm" href="/criteria">
+			Criteria Explorer
+			<ArrowRight class="ml-1 size-4" />
+		</Button>
+	</div>
 
 	<!-- Chip bar -->
 	<div class="flex flex-wrap items-center gap-2">

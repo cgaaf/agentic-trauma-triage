@@ -5,6 +5,8 @@
 	import CriteriaFilters from "$lib/components/data-explorer/CriteriaFilters.svelte";
 	import CriteriaTable from "$lib/components/data-explorer/CriteriaTable.svelte";
 	import CriteriaExamplesSheet from "$lib/components/data-explorer/CriteriaExamplesSheet.svelte";
+	import { Button } from "$lib/components/ui/button/index.js";
+	import ArrowRight from "@lucide/svelte/icons/arrow-right";
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
 
@@ -111,7 +113,13 @@
 </svelte:head>
 
 <div class="container mx-auto max-w-7xl space-y-4 p-4">
-	<h1 class="text-2xl font-bold tracking-tight">Criteria Explorer</h1>
+	<div class="flex items-center justify-between">
+		<h1 class="text-2xl font-bold tracking-tight">Criteria Explorer</h1>
+		<Button variant="outline" size="sm" href="/examples">
+			Examples Explorer
+			<ArrowRight class="ml-1 size-4" />
+		</Button>
+	</div>
 
 	<FilterPanel {activeFilterCount}>
 		<CriteriaFilters bind:levels bind:categories bind:age bind:search />
