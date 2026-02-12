@@ -117,7 +117,7 @@
 	<title>Criteria Explorer</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-7xl p-4">
+<div class="container mx-auto max-w-[1400px] p-4">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold tracking-tight">Criteria Explorer</h1>
 		<Button variant="outline" size="sm" href="/examples">
