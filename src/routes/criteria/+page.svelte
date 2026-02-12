@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { CriteriaRow } from "$lib/types/database.js";
-	import FilterPanel from "$lib/components/data-explorer/FilterPanel.svelte";
-	import ResultsCount from "$lib/components/data-explorer/ResultsCount.svelte";
-	import CriteriaFilters from "$lib/components/data-explorer/CriteriaFilters.svelte";
+	import FilterToolbar from "$lib/components/data-explorer/FilterToolbar.svelte";
+	import AnimatedFilterContainer from "$lib/components/data-explorer/AnimatedFilterContainer.svelte";
+	import MultiSelectFilterChip from "$lib/components/data-explorer/MultiSelectFilterChip.svelte";
+	import NumberFilterChip from "$lib/components/data-explorer/NumberFilterChip.svelte";
+	import TextSearchChip from "$lib/components/data-explorer/TextSearchChip.svelte";
 	import CriteriaTable from "$lib/components/data-explorer/CriteriaTable.svelte";
 	import CriteriaExamplesSheet from "$lib/components/data-explorer/CriteriaExamplesSheet.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
@@ -56,6 +58,9 @@
 			(age !== null ? 1 : 0) +
 			(search.trim() ? 1 : 0),
 	);
+
+	// ─── Filters open state (open if URL has active params) ─────────
+	let filtersOpen = $state(page.url.searchParams.size > 0);
 
 	// ─── URL sync (debounced for search, immediate for others) ──────
 	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -112,7 +117,7 @@
 	<title>Criteria Explorer</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-7xl space-y-4 p-4">
+<div class="container mx-auto max-w-7xl p-4">
 	<div class="flex items-center justify-between">
 		<h1 class="text-2xl font-bold tracking-tight">Criteria Explorer</h1>
 		<Button variant="outline" size="sm" href="/examples">
@@ -121,13 +126,49 @@
 		</Button>
 	</div>
 
-	<FilterPanel {activeFilterCount}>
-		<CriteriaFilters bind:levels bind:categories bind:age bind:search />
-	</FilterPanel>
+	<div class="mt-4">
+		<FilterToolbar
+			filtered={filteredCriteria.length}
+			total={data.criteria.length}
+			{activeFilterCount}
+			bind:open={filtersOpen}
+			onclearall={clearFilters}
+		/>
+		<AnimatedFilterContainer open={filtersOpen}>
+			<div class="flex flex-wrap items-center gap-2 pt-4">
+				<MultiSelectFilterChip
+					label="Level"
+					options={["Level 1", "Level 2", "Level 3"]}
+					bind:selected={levels}
+					onclear={() => (levels = [])}
+				/>
+				<MultiSelectFilterChip
+					label="Category"
+					options={["Adult", "Pediatric", "Geriatric"]}
+					bind:selected={categories}
+					onclear={() => (categories = [])}
+				/>
+				<NumberFilterChip
+					label="Age"
+					bind:value={age}
+					min={0}
+					max={120}
+					placeholder="e.g. 25"
+					onclear={() => (age = null)}
+				/>
+				<TextSearchChip
+					label="Description"
+					placeholder="Search description…"
+					bind:value={search}
+					onclear={() => (search = "")}
+				/>
+			</div>
+		</AnimatedFilterContainer>
+	</div>
 
-	<ResultsCount filtered={filteredCriteria.length} total={data.criteria.length} />
-
-	<CriteriaTable criteria={filteredCriteria} onrowclick={openSheet} />
+	<div class="mt-2">
+		<CriteriaTable criteria={filteredCriteria} onrowclick={openSheet} />
+	</div>
 
 	<CriteriaExamplesSheet criterion={selectedCriterion} bind:open={sheetOpen} />
 </div>
