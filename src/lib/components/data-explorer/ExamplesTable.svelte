@@ -18,9 +18,9 @@
 		<Table.Header>
 			<Table.Row>
 				<Table.Head class="w-10 border-r text-right">ID</Table.Head>
-				<Table.Head class="min-w-[200px] max-w-[300px]">Criterion</Table.Head>
-				<Table.Head class="min-w-[150px] max-w-[200px]">Mechanism</Table.Head>
-				<Table.Head class="min-w-[150px] max-w-[200px]">Descriptors</Table.Head>
+				<Table.Head class="min-w-[200px]">Criterion</Table.Head>
+				<Table.Head class="min-w-[150px]">Mechanism</Table.Head>
+				<Table.Head class="min-w-[150px]">Descriptors</Table.Head>
 				<Table.Head class="w-12">Age</Table.Head>
 				<Table.Head class="w-16">Gender</Table.Head>
 				<Table.Head class="w-12">GCS</Table.Head>
@@ -40,7 +40,7 @@
 					onclick={() => onrowclick(row)}
 				>
 					<Table.Cell class="border-r text-right font-mono text-xs">{row.id}</Table.Cell>
-					<Table.Cell class="max-w-[300px] text-xs">
+					<Table.Cell class="text-xs">
 						<div class="line-clamp-2 whitespace-normal">
 							{#if row.criteria}
 								{row.criteria.description}
@@ -49,10 +49,10 @@
 							{/if}
 						</div>
 					</Table.Cell>
-					<Table.Cell class="max-w-[200px] text-xs">
+					<Table.Cell class="text-xs">
 						<div class="line-clamp-2 whitespace-normal">{row.mechanism}</div>
 					</Table.Cell>
-					<Table.Cell class="max-w-[200px] text-xs">
+					<Table.Cell class="text-xs">
 						<div class="line-clamp-2 whitespace-normal">{row.descriptors ?? dash}</div>
 					</Table.Cell>
 					<Table.Cell class="font-mono text-xs">{row.age}</Table.Cell>
