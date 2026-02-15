@@ -14,7 +14,7 @@
 </script>
 
 <div class="overflow-x-auto rounded-md border">
-	<Table.Root class="[&_td]:px-3 [&_th]:px-3">
+	<Table.Root class="[&_td]:px-3 [&_th]:px-3 [&_th]:text-xs">
 		<Table.Header>
 			<Table.Row>
 				<Table.Head class="w-10 border-r text-right">ID</Table.Head>
