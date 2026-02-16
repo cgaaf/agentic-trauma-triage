@@ -22,9 +22,12 @@
 		page.url.searchParams.get("categories")?.split(",").filter(Boolean) ?? [],
 	);
 	let age: number | null = $state(
-		page.url.searchParams.has("age")
-			? parseInt(page.url.searchParams.get("age")!, 10)
-			: null,
+		(() => {
+			const raw = page.url.searchParams.get("age");
+			if (raw === null) return null;
+			const parsed = parseInt(raw, 10);
+			return Number.isNaN(parsed) ? null : parsed;
+		})(),
 	);
 	let search: string = $state(page.url.searchParams.get("search") ?? "");
 

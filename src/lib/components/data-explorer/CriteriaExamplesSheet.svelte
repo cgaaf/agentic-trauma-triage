@@ -15,20 +15,25 @@
 	let examples = $state<ExampleRow[]>([]);
 	let loading = $state(false);
 	let fetchError = $state("");
+	let abortController: AbortController | null = $state(null);
 
 	async function fetchExamples(id: number) {
+		abortController?.abort();
+		const controller = new AbortController();
+		abortController = controller;
 		loading = true;
 		fetchError = "";
 		examples = [];
 		try {
-			const res = await fetch(`/api/criteria/${id}/examples`);
+			const res = await fetch(`/api/criteria/${id}/examples`, { signal: controller.signal });
 			if (!res.ok) throw new Error("Failed to fetch examples");
 			const data = await res.json();
 			examples = data.examples;
 		} catch (e) {
+			if (e instanceof DOMException && e.name === "AbortError") return;
 			fetchError = e instanceof Error ? e.message : "Failed to fetch";
 		} finally {
-			loading = false;
+			if (!controller.signal.aborted) loading = false;
 		}
 	}
 

@@ -41,13 +41,14 @@
 	});
 
 	function onTriStateChange(v: NullFilterState) {
-		if (v === "has_value" && nullState !== "has_value") {
+		const entering = v === "has_value" && nullState !== "has_value";
+		nullState = v;
+		onnullchange?.(v);
+		if (entering) {
 			const resetRange: [number, number] = [min, max];
 			range = resetRange;
 			onrangechange?.(resetRange);
 		}
-		nullState = v;
-		onnullchange?.(v);
 	}
 </script>
 
