@@ -15,7 +15,7 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "test:unit": "vitest",
-    "test": "npm run test:unit -- --run",
+    "test": "pnpm run test:unit -- --run",
     "validate": "pnpm fmt && pnpm check & pnpm lint & pnpm test & wait",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
