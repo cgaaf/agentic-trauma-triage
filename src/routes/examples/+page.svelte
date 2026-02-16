@@ -47,6 +47,11 @@
 		{ value: "Ventilator", label: "Ventilator" },
 	];
 
+	const genderOptions = [
+		{ value: "male", label: "Male Only" },
+		{ value: "female", label: "Female Only" },
+	];
+
 	// ─── Filters open state (open if URL has active params) ─────
 	let filtersOpen = $state(page.url.searchParams.size > 0);
 
@@ -93,7 +98,7 @@
 	}
 
 	function setCategoryFilter(
-		field: "airway" | "breathing",
+		field: "airway" | "breathing" | "gender",
 		selected: string,
 		nullState: NullFilterState,
 	) {
@@ -164,7 +169,7 @@
 		);
 	}
 
-	function clearCategory(field: "airway" | "breathing") {
+	function clearCategory(field: "airway" | "breathing" | "gender") {
 		navigate(
 			buildUpdatedParams(page.url.searchParams, {
 				[field]: "",
@@ -234,11 +239,14 @@
 				bind:searchValue={descriptorsSearchLocal}
 				searchPlaceholder="Search descriptors…"
 			/>
-			<NullFilterChip
+			<CategoryFilterChip
 				label="Gender"
+				options={genderOptions}
+				selected={filters.gender}
 				nullState={filters.nullFilters.gender}
-				onnullchange={(v) => setNullFilter("gender", v)}
-				onclear={() => clearNullFilter("gender")}
+				showHasValue
+				onchange={(sel, ns) => setCategoryFilter("gender", sel, ns)}
+				onclear={() => clearCategory("gender")}
 			/>
 			<VitalFilterChip
 				label="GCS"

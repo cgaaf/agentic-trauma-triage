@@ -142,6 +142,16 @@ describe("parseFiltersFromUrl", () => {
     expect(result.breathing).toBe("Bagging");
   });
 
+  it("parses gender category filter", () => {
+    const result = parseFiltersFromUrl(new URLSearchParams("gender=female"));
+    expect(result.gender).toBe("female");
+  });
+
+  it("defaults gender to empty string when absent", () => {
+    const result = parseFiltersFromUrl(new URLSearchParams());
+    expect(result.gender).toBe("");
+  });
+
   it("parses mechanism search", () => {
     const result = parseFiltersFromUrl(new URLSearchParams("search=fall"));
     expect(result.search).toBe("fall");
@@ -205,10 +215,10 @@ describe("parseFiltersFromUrl", () => {
   it("parses complex URL with all params simultaneously", () => {
     const params = new URLSearchParams(
       "gcs=5,12&sbp=80,160&hr=50,120&rr=12,24&spo2=92,100" +
-        "&airway=patent&breathing=Bagging&search=fall&criterion_search=burn&descriptors_search=leg" +
+        "&airway=patent&breathing=Bagging&gender=male&search=fall&criterion_search=burn&descriptors_search=leg" +
         "&null_gcs=has_value&null_systolic_bp=has_value&null_heart_rate=has_value" +
         "&null_respiratory_rate=has_value&null_oxygen_saturation=has_value" +
-        "&null_gender=is_empty&null_pregnancy_in_weeks=has_value",
+        "&null_gender=has_value&null_pregnancy_in_weeks=has_value",
     );
     const result = parseFiltersFromUrl(params);
 
@@ -216,10 +226,11 @@ describe("parseFiltersFromUrl", () => {
     expect(result.vitalRanges.sbp).toEqual([80, 160]);
     expect(result.airway).toBe("patent");
     expect(result.breathing).toBe("Bagging");
+    expect(result.gender).toBe("male");
     expect(result.search).toBe("fall");
     expect(result.criterionSearch).toBe("burn");
     expect(result.descriptorsSearch).toBe("leg");
-    expect(result.nullFilters.gender).toBe("is_empty");
+    expect(result.nullFilters.gender).toBe("has_value");
     expect(result.nullFilters.pregnancy_in_weeks).toBe("has_value");
   });
 });
@@ -408,6 +419,26 @@ describe("filterExamples", () => {
         makeExample({ id: 2, breathing: null }),
       ];
       const result = filterExamples(examples, makeFilters({ breathing: "" }));
+      expect(result).toHaveLength(2);
+    });
+
+    it("filters by gender exact match", () => {
+      const examples = [
+        makeExample({ id: 1, gender: "male" }),
+        makeExample({ id: 2, gender: "female" }),
+        makeExample({ id: 3, gender: null }),
+      ];
+      const result = filterExamples(examples, makeFilters({ gender: "female" }));
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe(2);
+    });
+
+    it("does not filter when gender is empty string", () => {
+      const examples = [
+        makeExample({ id: 1, gender: "male" }),
+        makeExample({ id: 2, gender: null }),
+      ];
+      const result = filterExamples(examples, makeFilters({ gender: "" }));
       expect(result).toHaveLength(2);
     });
   });
@@ -740,6 +771,16 @@ describe("buildFilterParams", () => {
     expect(params.has("airway")).toBe(false);
   });
 
+  it("includes gender param when non-empty", () => {
+    const params = buildFilterParams(makeFilters({ gender: "male" }));
+    expect(params.get("gender")).toBe("male");
+  });
+
+  it("does not include gender param when empty string", () => {
+    const params = buildFilterParams(makeFilters({ gender: "" }));
+    expect(params.has("gender")).toBe(false);
+  });
+
   it("includes search param when non-empty (trimmed)", () => {
     const params = buildFilterParams(makeFilters({ search: " fall " }));
     expect(params.get("search")).toBe("fall");
@@ -783,10 +824,11 @@ describe("buildFilterParams", () => {
         heart_rate: "has_value",
         respiratory_rate: "has_value",
         oxygen_saturation: "has_value",
-        gender: "is_empty",
+        gender: "has_value",
       },
       airway: "patent",
       breathing: "Bagging",
+      gender: "female",
       search: "fall",
       criterionSearch: "burn",
       descriptorsSearch: "leg",
@@ -800,10 +842,11 @@ describe("buildFilterParams", () => {
     expect(params.get("spo2")).toBe("92,100");
     expect(params.get("airway")).toBe("patent");
     expect(params.get("breathing")).toBe("Bagging");
+    expect(params.get("gender")).toBe("female");
     expect(params.get("search")).toBe("fall");
     expect(params.get("criterion_search")).toBe("burn");
     expect(params.get("descriptors_search")).toBe("leg");
-    expect(params.get("null_gender")).toBe("is_empty");
+    expect(params.get("null_gender")).toBe("has_value");
     expect(params.get("null_gcs")).toBe("has_value");
   });
 });
@@ -839,11 +882,12 @@ describe("buildFilterParams / parseFiltersFromUrl roundtrip", () => {
         heart_rate: "has_value",
         respiratory_rate: "has_value",
         oxygen_saturation: "has_value",
-        gender: "is_empty",
+        gender: "has_value",
         pregnancy_in_weeks: "has_value",
       },
       airway: "patent",
       breathing: "Bagging",
+      gender: "male",
       search: "fall",
       criterionSearch: "burn",
       descriptorsSearch: "leg",
@@ -880,6 +924,10 @@ describe("countActiveFilters", () => {
 
   it("counts breathing when non-empty", () => {
     expect(countActiveFilters(makeFilters({ breathing: "Bagging" }))).toBe(1);
+  });
+
+  it("counts gender when non-empty", () => {
+    expect(countActiveFilters(makeFilters({ gender: "female" }))).toBe(1);
   });
 
   it("counts search when non-empty after trim", () => {
@@ -933,13 +981,14 @@ describe("countActiveFilters", () => {
       vitalRanges: { ...VITAL_DEFAULTS },
       airway: "patent",
       breathing: "Bagging",
+      gender: "male",
       search: "fall",
       criterionSearch: "burn",
       descriptorsSearch: "leg",
       nullFilters,
     };
-    // 5 string filters + 11 null filters = 16
-    expect(countActiveFilters(filters)).toBe(16);
+    // 6 string/category filters + 11 null filters = 17
+    expect(countActiveFilters(filters)).toBe(17);
   });
 });
 
@@ -959,6 +1008,7 @@ describe("defaultFilterState", () => {
     const state = defaultFilterState();
     expect(state.airway).toBe("");
     expect(state.breathing).toBe("");
+    expect(state.gender).toBe("");
     expect(state.search).toBe("");
     expect(state.criterionSearch).toBe("");
     expect(state.descriptorsSearch).toBe("");
@@ -1319,6 +1369,45 @@ describe("state transition roundtrips", () => {
 
       url = buildUpdatedParams(url, { breathing: "" });
       expect(url.has("breathing")).toBe(false);
+    });
+
+    it("setting gender to 'male' adds param, clearing to '' removes it", () => {
+      let url = new URLSearchParams();
+
+      url = buildUpdatedParams(url, { gender: "male" });
+      expect(url.get("gender")).toBe("male");
+
+      url = buildUpdatedParams(url, { gender: "" });
+      expect(url.has("gender")).toBe(false);
+      expect(url.toString()).toBe("");
+    });
+
+    it("gender CategoryFilterChip workflow: select value → is_empty → all", () => {
+      let url = new URLSearchParams();
+
+      // User selects "Female"
+      url = buildUpdatedParams(url, {
+        gender: "female",
+        nullFilters: { ...parseFiltersFromUrl(url).nullFilters, gender: "all" },
+      });
+      expect(url.get("gender")).toBe("female");
+
+      // User selects (Empty)
+      url = buildUpdatedParams(url, {
+        gender: "",
+        nullFilters: { ...parseFiltersFromUrl(url).nullFilters, gender: "is_empty" },
+      });
+      expect(url.has("gender")).toBe(false);
+      expect(url.get("null_gender")).toBe("is_empty");
+
+      // User selects (All)
+      url = buildUpdatedParams(url, {
+        gender: "",
+        nullFilters: { ...parseFiltersFromUrl(url).nullFilters, gender: "all" },
+      });
+      expect(url.has("gender")).toBe(false);
+      expect(url.has("null_gender")).toBe(false);
+      expect(url.toString()).toBe("");
     });
 
     it("CategoryFilterChip empty sentinel workflow: select → is_empty → back to all", () => {

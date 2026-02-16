@@ -6,12 +6,14 @@
 	import type { NullFilterState } from "$lib/types/database.js";
 
 	const EMPTY_SENTINEL = "__empty__";
+	const HAS_VALUE_SENTINEL = "__has_value__";
 
 	let {
 		label,
 		options,
 		selected = $bindable(),
 		nullState = $bindable(),
+		showHasValue = false,
 		onchange,
 		onclear,
 	}: {
@@ -19,6 +21,7 @@
 		options: { value: string; label: string }[];
 		selected: string;
 		nullState: NullFilterState;
+		showHasValue?: boolean;
 		onchange?: (selected: string, nullState: NullFilterState) => void;
 		onclear?: () => void;
 	} = $props();
@@ -27,6 +30,7 @@
 
 	let chipLabel = $derived.by(() => {
 		if (nullState === "is_empty") return `${label}: empty`;
+		if (nullState === "has_value" && !selected) return `${label}: not empty`;
 		if (selected) {
 			const opt = options.find((o) => o.value === selected);
 			return `${label}: ${opt?.label ?? selected}`;
@@ -37,6 +41,7 @@
 	// Combine selected value + nullState into a single Select value
 	let selectValue = $derived.by(() => {
 		if (nullState === "is_empty") return EMPTY_SENTINEL;
+		if (nullState === "has_value" && !selected) return HAS_VALUE_SENTINEL;
 		return selected;
 	});
 
@@ -46,6 +51,10 @@
 			selected = "";
 			nullState = "is_empty";
 			onchange?.("", "is_empty");
+		} else if (val === HAS_VALUE_SENTINEL) {
+			selected = "";
+			nullState = "has_value";
+			onchange?.("", "has_value");
 		} else {
 			selected = val;
 			nullState = "all";
@@ -85,6 +94,8 @@
 			<Select.Trigger class="w-full">
 				{#if nullState === "is_empty"}
 					(Empty)
+				{:else if nullState === "has_value" && !selected}
+					(Not Empty)
 				{:else if selected}
 					{options.find((o) => o.value === selected)?.label ?? selected}
 				{:else}
@@ -97,6 +108,9 @@
 					<Select.Item value={opt.value}>{opt.label}</Select.Item>
 				{/each}
 				<Select.Separator />
+				{#if showHasValue}
+					<Select.Item value={HAS_VALUE_SENTINEL}>(Not Empty)</Select.Item>
+				{/if}
 				<Select.Item value={EMPTY_SENTINEL}>(Empty)</Select.Item>
 			</Select.Content>
 		</Select.Root>

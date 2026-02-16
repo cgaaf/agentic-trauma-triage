@@ -46,6 +46,7 @@ export interface ExamplesFilterState {
   vitalRanges: Record<VitalParamKey, [number, number]>;
   airway: string;
   breathing: string;
+  gender: string;
   search: string;
   criterionSearch: string;
   descriptorsSearch: string;
@@ -83,6 +84,7 @@ export function defaultFilterState(): ExamplesFilterState {
     },
     airway: "",
     breathing: "",
+    gender: "",
     search: "",
     criterionSearch: "",
     descriptorsSearch: "",
@@ -111,6 +113,7 @@ export function parseFiltersFromUrl(searchParams: URLSearchParams): ExamplesFilt
   // Category / text filters
   state.airway = searchParams.get("airway") ?? "";
   state.breathing = searchParams.get("breathing") ?? "";
+  state.gender = searchParams.get("gender") ?? "";
   state.search = searchParams.get("search") ?? "";
   state.criterionSearch = searchParams.get("criterion_search") ?? "";
   state.descriptorsSearch = searchParams.get("descriptors_search") ?? "";
@@ -188,6 +191,9 @@ export function filterExamples(
   if (filters.breathing) {
     result = result.filter((e) => e.breathing === filters.breathing);
   }
+  if (filters.gender) {
+    result = result.filter((e) => e.gender === filters.gender);
+  }
 
   // ── Text search (case-insensitive substring) ──
   if (filters.search.trim()) {
@@ -246,6 +252,7 @@ export function buildFilterParams(filters: ExamplesFilterState): URLSearchParams
   // Category filters
   if (filters.airway) params.set("airway", filters.airway);
   if (filters.breathing) params.set("breathing", filters.breathing);
+  if (filters.gender) params.set("gender", filters.gender);
 
   // Text search (trimmed)
   if (filters.search.trim()) params.set("search", filters.search.trim());
@@ -287,6 +294,7 @@ export function countActiveFilters(filters: ExamplesFilterState): number {
   return (
     (filters.airway ? 1 : 0) +
     (filters.breathing ? 1 : 0) +
+    (filters.gender ? 1 : 0) +
     (filters.search.trim() ? 1 : 0) +
     (filters.criterionSearch.trim() ? 1 : 0) +
     (filters.descriptorsSearch.trim() ? 1 : 0) +
