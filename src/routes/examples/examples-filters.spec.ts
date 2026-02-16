@@ -1463,3 +1463,58 @@ describe("state transition roundtrips", () => {
     });
   });
 });
+
+// ─── Two-step vital toggle regression (Bug 1) ──────────────────
+// VitalFilterChip fires onnullchange then onrangechange as two
+// separate sequential calls. The second call must build on the
+// URL produced by the first — if it doesn't, the range param is
+// lost because the first call's URL is the "current" for the second.
+
+describe("two-step vital toggle regression (Bug 1)", () => {
+  it("range param appears when toggling all → has_value via sequential updates", () => {
+    // Step 1: onnullchange fires — sets null state to has_value
+    const url1 = buildUpdatedParams(new URLSearchParams(), {
+      nullFilters: { ...defaultFilterState().nullFilters, gcs: "has_value" },
+    });
+    // Step 2: onrangechange fires — sets the default range [3, 15]
+    const url2 = buildUpdatedParams(url1, {
+      vitalRanges: { ...parseFiltersFromUrl(url1).vitalRanges, gcs: [3, 15] },
+    });
+
+    expect(url2.get("null_gcs")).toBe("has_value");
+    expect(url2.get("gcs")).toBe("3,15");
+
+    // Roundtrip: parsing the final URL should restore the range
+    const restored = parseFiltersFromUrl(url2);
+    expect(restored.vitalRanges.gcs).toEqual([3, 15]);
+    expect(restored.nullFilters.gcs).toBe("has_value");
+  });
+
+  it("custom range survives the two-step toggle", () => {
+    // Step 1: onnullchange fires
+    const url1 = buildUpdatedParams(new URLSearchParams(), {
+      nullFilters: { ...defaultFilterState().nullFilters, gcs: "has_value" },
+    });
+    // Step 2: onrangechange fires with custom range
+    const url2 = buildUpdatedParams(url1, {
+      vitalRanges: { ...parseFiltersFromUrl(url1).vitalRanges, gcs: [5, 12] },
+    });
+
+    expect(url2.get("gcs")).toBe("5,12");
+    expect(url2.get("null_gcs")).toBe("has_value");
+
+    const restored = parseFiltersFromUrl(url2);
+    expect(restored.vitalRanges.gcs).toEqual([5, 12]);
+  });
+
+  it("range is NOT serialized when nullState stays 'all'", () => {
+    // Only a vitalRanges change without setting nullState to has_value
+    const url = buildUpdatedParams(new URLSearchParams(), {
+      vitalRanges: { ...defaultFilterState().vitalRanges, gcs: [5, 12] },
+    });
+
+    // gcs param should not be in URL since nullState is still "all"
+    expect(url.has("gcs")).toBe(false);
+    expect(url.has("null_gcs")).toBe(false);
+  });
+});
