@@ -24,7 +24,7 @@
 		step?: number;
 		nullState: NullFilterState;
 		range: [number, number];
-		onnullchange?: (v: NullFilterState) => void;
+		onnullchange?: (v: NullFilterState, resetRange?: [number, number]) => void;
 		onrangechange?: (range: [number, number]) => void;
 		onclear?: () => void;
 	} = $props();
@@ -43,11 +43,12 @@
 	function onTriStateChange(v: NullFilterState) {
 		const entering = v === "has_value" && nullState !== "has_value";
 		nullState = v;
-		onnullchange?.(v);
 		if (entering) {
 			const resetRange: [number, number] = [min, max];
 			range = resetRange;
-			onrangechange?.(resetRange);
+			onnullchange?.(v, resetRange);
+		} else {
+			onnullchange?.(v);
 		}
 	}
 </script>

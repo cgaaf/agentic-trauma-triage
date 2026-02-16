@@ -1518,3 +1518,173 @@ describe("two-step vital toggle regression (Bug 1)", () => {
     expect(url.has("null_gcs")).toBe(false);
   });
 });
+
+// ─── Stale-state race condition (documents the bug) ─────────────
+// When two separate buildUpdatedParams calls both read from the SAME
+// stale base params, the second overwrites the first. This is exactly
+// what happened when VitalFilterChip fired onnullchange then
+// onrangechange as two separate navigate() calls.
+
+describe("stale-state race condition (documents the bug pattern)", () => {
+  it("second call with stale base params loses the first call's null filter", () => {
+    const staleBase = new URLSearchParams();
+
+    // Call 1: set null filter (would navigate)
+    const _url1 = buildUpdatedParams(staleBase, {
+      nullFilters: { ...defaultFilterState().nullFilters, gcs: "has_value" },
+    });
+
+    // Call 2: set range — but uses STALE base (not url1)
+    const url2 = buildUpdatedParams(staleBase, {
+      vitalRanges: { ...parseFiltersFromUrl(staleBase).vitalRanges, gcs: [3, 15] },
+    });
+
+    // Bug: null_gcs is lost because staleBase didn't have it
+    expect(url2.has("null_gcs")).toBe(false);
+    expect(url2.has("gcs")).toBe(false);
+  });
+});
+
+// ─── Atomic vital null+range update (fix path) ─────────────────
+// The fix sends both nullFilters and vitalRanges in a single
+// buildUpdatedParams call, avoiding the stale-state race.
+
+describe("atomic vital null+range update (fix validation)", () => {
+  it("GCS: single call with null filter + range preserves both in URL", () => {
+    const url = buildUpdatedParams(new URLSearchParams(), {
+      nullFilters: { ...defaultFilterState().nullFilters, gcs: "has_value" },
+      vitalRanges: { ...defaultFilterState().vitalRanges, gcs: [3, 15] },
+    });
+    expect(url.get("null_gcs")).toBe("has_value");
+    expect(url.get("gcs")).toBe("3,15");
+    const restored = parseFiltersFromUrl(url);
+    expect(restored.nullFilters.gcs).toBe("has_value");
+    expect(restored.vitalRanges.gcs).toEqual([3, 15]);
+  });
+
+  it("SBP: single call with null filter + slider range [0,300] preserves both", () => {
+    const url = buildUpdatedParams(new URLSearchParams(), {
+      nullFilters: { ...defaultFilterState().nullFilters, systolic_bp: "has_value" },
+      vitalRanges: { ...defaultFilterState().vitalRanges, sbp: [0, 300] },
+    });
+    expect(url.get("null_systolic_bp")).toBe("has_value");
+    expect(url.get("sbp")).toBe("0,300");
+    const restored = parseFiltersFromUrl(url);
+    expect(restored.nullFilters.systolic_bp).toBe("has_value");
+    expect(restored.vitalRanges.sbp).toEqual([0, 300]);
+  });
+
+  it("HR: single call with null filter + slider range [0,250] preserves both", () => {
+    const url = buildUpdatedParams(new URLSearchParams(), {
+      nullFilters: { ...defaultFilterState().nullFilters, heart_rate: "has_value" },
+      vitalRanges: { ...defaultFilterState().vitalRanges, hr: [0, 250] },
+    });
+    expect(url.get("null_heart_rate")).toBe("has_value");
+    expect(url.get("hr")).toBe("0,250");
+    const restored = parseFiltersFromUrl(url);
+    expect(restored.nullFilters.heart_rate).toBe("has_value");
+    expect(restored.vitalRanges.hr).toEqual([0, 250]);
+  });
+
+  it("RR: single call with null filter + slider range [0,60] preserves both", () => {
+    const url = buildUpdatedParams(new URLSearchParams(), {
+      nullFilters: { ...defaultFilterState().nullFilters, respiratory_rate: "has_value" },
+      vitalRanges: { ...defaultFilterState().vitalRanges, rr: [0, 60] },
+    });
+    expect(url.get("null_respiratory_rate")).toBe("has_value");
+    expect(url.get("rr")).toBe("0,60");
+    const restored = parseFiltersFromUrl(url);
+    expect(restored.nullFilters.respiratory_rate).toBe("has_value");
+    expect(restored.vitalRanges.rr).toEqual([0, 60]);
+  });
+
+  it("SpO2: single call with null filter + slider range [0,100] preserves both", () => {
+    const url = buildUpdatedParams(new URLSearchParams(), {
+      nullFilters: { ...defaultFilterState().nullFilters, oxygen_saturation: "has_value" },
+      vitalRanges: { ...defaultFilterState().vitalRanges, spo2: [0, 100] },
+    });
+    expect(url.get("null_oxygen_saturation")).toBe("has_value");
+    expect(url.get("spo2")).toBe("0,100");
+    const restored = parseFiltersFromUrl(url);
+    expect(restored.nullFilters.oxygen_saturation).toBe("has_value");
+    expect(restored.vitalRanges.spo2).toEqual([0, 100]);
+  });
+
+  it("atomic update preserves existing unrelated filters", () => {
+    const base = new URLSearchParams("search=fall&null_gender=is_empty&airway=patent");
+    const url = buildUpdatedParams(base, {
+      nullFilters: { ...parseFiltersFromUrl(base).nullFilters, gcs: "has_value" },
+      vitalRanges: { ...parseFiltersFromUrl(base).vitalRanges, gcs: [3, 15] },
+    });
+    expect(url.get("null_gcs")).toBe("has_value");
+    expect(url.get("gcs")).toBe("3,15");
+    expect(url.get("search")).toBe("fall");
+    expect(url.get("null_gender")).toBe("is_empty");
+    expect(url.get("airway")).toBe("patent");
+  });
+
+  it("atomic update roundtrips through parse correctly", () => {
+    const base = new URLSearchParams("null_gender=has_value");
+    const url = buildUpdatedParams(base, {
+      nullFilters: { ...parseFiltersFromUrl(base).nullFilters, systolic_bp: "has_value" },
+      vitalRanges: { ...parseFiltersFromUrl(base).vitalRanges, sbp: [0, 300] },
+    });
+    const restored = parseFiltersFromUrl(url);
+    expect(restored.nullFilters.gender).toBe("has_value");
+    expect(restored.nullFilters.systolic_bp).toBe("has_value");
+    expect(restored.vitalRanges.sbp).toEqual([0, 300]);
+  });
+
+  it("switching from has_value back to all clears both null filter and range", () => {
+    // First: atomically set has_value + range
+    let url = buildUpdatedParams(new URLSearchParams(), {
+      nullFilters: { ...defaultFilterState().nullFilters, heart_rate: "has_value" },
+      vitalRanges: { ...defaultFilterState().vitalRanges, hr: [0, 250] },
+    });
+    expect(url.get("null_heart_rate")).toBe("has_value");
+    expect(url.get("hr")).toBe("0,250");
+
+    // Then: switch back to all
+    url = buildUpdatedParams(url, {
+      nullFilters: { ...parseFiltersFromUrl(url).nullFilters, heart_rate: "all" },
+    });
+    expect(url.has("null_heart_rate")).toBe(false);
+    expect(url.has("hr")).toBe(false);
+  });
+
+  it("switching from has_value to is_empty clears range but keeps null filter", () => {
+    // First: atomically set has_value + range
+    let url = buildUpdatedParams(new URLSearchParams(), {
+      nullFilters: { ...defaultFilterState().nullFilters, respiratory_rate: "has_value" },
+      vitalRanges: { ...defaultFilterState().vitalRanges, rr: [0, 60] },
+    });
+
+    // Then: switch to is_empty
+    url = buildUpdatedParams(url, {
+      nullFilters: { ...parseFiltersFromUrl(url).nullFilters, respiratory_rate: "is_empty" },
+    });
+    expect(url.get("null_respiratory_rate")).toBe("is_empty");
+    expect(url.has("rr")).toBe(false);
+  });
+
+  it("multiple vitals can be atomically activated independently", () => {
+    let url = new URLSearchParams();
+
+    // Activate GCS
+    url = buildUpdatedParams(url, {
+      nullFilters: { ...parseFiltersFromUrl(url).nullFilters, gcs: "has_value" },
+      vitalRanges: { ...parseFiltersFromUrl(url).vitalRanges, gcs: [3, 15] },
+    });
+
+    // Activate SBP (GCS should still be present)
+    url = buildUpdatedParams(url, {
+      nullFilters: { ...parseFiltersFromUrl(url).nullFilters, systolic_bp: "has_value" },
+      vitalRanges: { ...parseFiltersFromUrl(url).vitalRanges, sbp: [0, 300] },
+    });
+
+    expect(url.get("null_gcs")).toBe("has_value");
+    expect(url.get("gcs")).toBe("3,15");
+    expect(url.get("null_systolic_bp")).toBe("has_value");
+    expect(url.get("sbp")).toBe("0,300");
+  });
+});

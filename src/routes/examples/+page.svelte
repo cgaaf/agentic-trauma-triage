@@ -21,6 +21,7 @@
 		countActiveFilters,
 		defaultFilterState,
 		VITAL_DEFAULTS,
+		type ExamplesFilterState,
 		type NullFilterColumn,
 		type VitalParamKey,
 	} from "./examples-filters.js";
@@ -74,6 +75,21 @@
 				vitalRanges: { ...filters.vitalRanges, [key]: range },
 			}),
 		);
+	}
+
+	function setVitalNullFilter(
+		paramKey: VitalParamKey,
+		col: NullFilterColumn,
+		value: NullFilterState,
+		resetRange?: [number, number],
+	) {
+		const update: Partial<ExamplesFilterState> = {
+			nullFilters: { ...filters.nullFilters, [col]: value },
+		};
+		if (resetRange) {
+			update.vitalRanges = { ...filters.vitalRanges, [paramKey]: resetRange };
+		}
+		navigate(buildUpdatedParams(page.url.searchParams, update));
 	}
 
 	function setCategoryFilter(
@@ -230,7 +246,7 @@
 				max={15}
 				nullState={filters.nullFilters.gcs}
 				range={filters.vitalRanges.gcs}
-				onnullchange={(v) => setNullFilter("gcs", v)}
+				onnullchange={(v, r) => setVitalNullFilter("gcs", "gcs", v, r)}
 				onrangechange={(r) => setVitalRange("gcs", r)}
 				onclear={() => clearVital("gcs", "gcs")}
 			/>
@@ -240,7 +256,7 @@
 				max={300}
 				nullState={filters.nullFilters.systolic_bp}
 				range={filters.vitalRanges.sbp}
-				onnullchange={(v) => setNullFilter("systolic_bp", v)}
+				onnullchange={(v, r) => setVitalNullFilter("sbp", "systolic_bp", v, r)}
 				onrangechange={(r) => setVitalRange("sbp", r)}
 				onclear={() => clearVital("sbp", "systolic_bp")}
 			/>
@@ -250,7 +266,7 @@
 				max={250}
 				nullState={filters.nullFilters.heart_rate}
 				range={filters.vitalRanges.hr}
-				onnullchange={(v) => setNullFilter("heart_rate", v)}
+				onnullchange={(v, r) => setVitalNullFilter("hr", "heart_rate", v, r)}
 				onrangechange={(r) => setVitalRange("hr", r)}
 				onclear={() => clearVital("hr", "heart_rate")}
 			/>
@@ -260,7 +276,7 @@
 				max={60}
 				nullState={filters.nullFilters.respiratory_rate}
 				range={filters.vitalRanges.rr}
-				onnullchange={(v) => setNullFilter("respiratory_rate", v)}
+				onnullchange={(v, r) => setVitalNullFilter("rr", "respiratory_rate", v, r)}
 				onrangechange={(r) => setVitalRange("rr", r)}
 				onclear={() => clearVital("rr", "respiratory_rate")}
 			/>
@@ -286,7 +302,7 @@
 				max={100}
 				nullState={filters.nullFilters.oxygen_saturation}
 				range={filters.vitalRanges.spo2}
-				onnullchange={(v) => setNullFilter("oxygen_saturation", v)}
+				onnullchange={(v, r) => setVitalNullFilter("spo2", "oxygen_saturation", v, r)}
 				onrangechange={(r) => setVitalRange("spo2", r)}
 				onclear={() => clearVital("spo2", "oxygen_saturation")}
 			/>
