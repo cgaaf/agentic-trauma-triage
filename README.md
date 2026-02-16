@@ -2,8 +2,6 @@
 
 A research project exploring LLM-assisted trauma triage decision support. The agent takes free-text EMS trauma reports and determines a trauma activation level using a hybrid approach: deterministic evaluation for vital signs and LLM-based reasoning for mechanism-of-injury and anatomical criteria.
 
-Built in collaboration between Clemson University Industrial Engineering and Anthropic.
-
 ## How It Works
 
 1. **Extraction** — An LLM extracts structured fields (vitals, injuries, mechanisms) from the free-text report
